@@ -1,7 +1,10 @@
 # Cloudflare Workers configuration
-name = "oliebollen-api"
-main = "api/worker.js"
+name = "oliebollen-costa-blanca"
+main = "worker.js"
 compatibility_date = "2024-01-01"
+
+# Static assets (HTML, CSS, JS)
+assets = { directory = "./public" }
 
 # D1 Database binding
 [[d1_databases]]
@@ -9,16 +12,6 @@ binding = "DB"
 database_name = "oliebollen-db"
 database_id = "placeholder-will-be-set-after-creation"
 
-# KV Namespace for sessions/cache
-[[kv_namespaces]]
-binding = "CACHE"
-id = "placeholder-will-be-set-after-creation"
-
 # Environment variables (set via dashboard or wrangler secret)
 [vars]
 ENVIRONMENT = "production"
-
-# Routes - serve API from /api/*
-# [[routes]]
-# pattern = "oliebollencostablanca.com/api/*"
-# zone_name = "oliebollencostablanca.com"
