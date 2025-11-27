@@ -1,6 +1,7 @@
 /**
  * Oliebollen Costa Blanca - Cloudflare Worker
- * Handles API routes, static assets served automatically via assets config
+ * Static assets worden automatisch geserveerd via assets config
+ * Deze Worker handelt alleen /api/* routes af
  */
 
 // Product prices
@@ -33,17 +34,17 @@ export default {
             return new Response(null, { headers: corsHeaders });
         }
 
-        // API routes
+        // Only handle API routes - static assets are served automatically
         if (path.startsWith('/api/')) {
-            return handleAPI(request, env, path);
+            return handleAPI(request, env, ctx, path);
         }
 
-        // Let static assets be handled by the assets config
-        return env.ASSETS.fetch(request);
+        // For non-API routes, return 404 (static assets handler will catch these first)
+        return new Response('Not Found', { status: 404 });
     }
 };
 
-async function handleAPI(request, env, path) {
+async function handleAPI(request, env, ctx, path) {
     try {
         // GET /api/timeslots
         if (path === '/api/timeslots' && request.method === 'GET') {
@@ -62,7 +63,7 @@ async function handleAPI(request, env, path) {
 
         // POST /api/orders
         if (path === '/api/orders' && request.method === 'POST') {
-            return createOrder(request, env);
+            return createOrder(request, env, ctx);
         }
 
         // GET /api/orders/:orderNumber
@@ -142,6 +143,7 @@ function generateDefaultTimeslots() {
 
 // API Handlers
 async function getTimeslots(env) {
+    // No database yet, return defaults
     if (!env.DB) return jsonResponse(generateDefaultTimeslots());
 
     try {
@@ -167,9 +169,9 @@ async function getTimeslots(env) {
 }
 
 async function updateCapacity(request, env) {
-    if (!env.DB) return jsonResponse({ success: true });
-    const updates = await request.json();
+    if (!env.DB) return jsonResponse({ success: true, message: 'No database configured' });
 
+    const updates = await request.json();
     for (const { id, capacity } of updates) {
         await env.DB.prepare('UPDATE timeslots SET capacity = ? WHERE id = ?')
             .bind(capacity, id).run();
@@ -201,7 +203,7 @@ async function getOrders(env) {
 }
 
 async function getOrder(orderNumber, env) {
-    if (!env.DB) return jsonResponse({ error: 'No database' }, 500);
+    if (!env.DB) return jsonResponse({ error: 'No database configured' }, 500);
 
     const row = await env.DB.prepare(
         'SELECT * FROM orders WHERE order_number = ?'
@@ -221,7 +223,7 @@ async function getOrder(orderNumber, env) {
     });
 }
 
-async function createOrder(request, env) {
+async function createOrder(request, env, ctx) {
     const data = await request.json();
 
     if (!data.products || !data.customer || !data.timeslot) {
@@ -232,6 +234,7 @@ async function createOrder(request, env) {
     const total = data.total || calculateTotal(data.products);
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${orderNumber}`;
 
+    // No database - just return success with order number
     if (!env.DB) {
         return jsonResponse({ orderNumber, qrCode: qrCodeUrl, total });
     }
@@ -263,7 +266,9 @@ async function createOrder(request, env) {
         ).run();
 
         // Send email async
-        ctx.waitUntil(sendEmail(data.customer, orderNumber, data, total, env));
+        if (ctx && env.RESEND_API_KEY) {
+            ctx.waitUntil(sendEmail(data.customer, orderNumber, data, total, env));
+        }
 
         return jsonResponse({ orderNumber, qrCode: qrCodeUrl, total });
     } catch (e) {
@@ -351,17 +356,21 @@ async function sendEmail(customer, orderNumber, orderData, total, env) {
         </div>
     </div>`;
 
-    await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            from: env.FROM_EMAIL || 'Oliebollen <noreply@oliebollencostablanca.com>',
-            to: customer.email,
-            subject: `🍩 Bevestiging bestelling ${orderNumber}`,
-            html
-        })
-    });
+    try {
+        await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                from: env.FROM_EMAIL || 'Oliebollen <onboarding@resend.dev>',
+                to: customer.email,
+                subject: `🍩 Bevestiging bestelling ${orderNumber}`,
+                html
+            })
+        });
+    } catch (e) {
+        console.error('Email error:', e);
+    }
 }
