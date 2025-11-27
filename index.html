@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oliebollen Costa Blanca - Bestel voor Oudjaar 2025</title>
+    <meta name="description" content="Bestel echte Hollandse oliebollen en appelbeignets voor Oud & Nieuw 2025 in Costa Blanca">
+    <meta name="theme-color" content="#e67e22">
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- QR Code library -->
+    <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js" defer></script>
+</head>
+<body>
+    <header class="hero">
+        <div class="container">
+            <h1>🍩 Oliebollen Costa Blanca</h1>
+            <p class="tagline">Echte Hollandse oliebollen voor Oud & Nieuw 2025!</p>
+            <p class="subtitle">Bestel nu, haal op 31 december</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Bestelformulier -->
+        <section class="order-section">
+            <div class="order-form" id="orderForm">
+                <!-- Stap indicator -->
+                <div class="step-indicator">
+                    <div class="step active" data-step="1">
+                        <span class="step-number">1</span>
+                        <span class="step-label">Producten</span>
+                    </div>
+                    <div class="step" data-step="2">
+                        <span class="step-number">2</span>
+                        <span class="step-label">Tijdslot</span>
+                    </div>
+                    <div class="step" data-step="3">
+                        <span class="step-number">3</span>
+                        <span class="step-label">Gegevens</span>
+                    </div>
+                    <div class="step" data-step="4">
+                        <span class="step-number">4</span>
+                        <span class="step-label">Bevestig</span>
+                    </div>
+                </div>
+
+                <!-- Stap 1: Producten kiezen -->
+                <div class="form-step active" id="step1">
+                    <h2>Wat wil je bestellen?</h2>
+                    <p class="step-description">Kies je favoriete lekkernijen</p>
+
+                    <div class="product-list">
+                        <div class="product-card">
+                            <div class="product-info">
+                                <h3>Oliebollen met krenten</h3>
+                                <p class="product-description">Klassieke oliebol met rozijnen</p>
+                                <p class="product-price">€ 1,00 per stuk</p>
+                            </div>
+                            <div class="product-quantity">
+                                <button type="button" class="qty-btn minus" data-product="oliebol_krenten">-</button>
+                                <input type="number" id="oliebol_krenten" name="oliebol_krenten" value="0" min="0" max="100" readonly>
+                                <button type="button" class="qty-btn plus" data-product="oliebol_krenten">+</button>
+                            </div>
+                        </div>
+
+                        <div class="product-card">
+                            <div class="product-info">
+                                <h3>Oliebollen zonder krenten</h3>
+                                <p class="product-description">Klassieke oliebol naturel</p>
+                                <p class="product-price">€ 1,00 per stuk</p>
+                            </div>
+                            <div class="product-quantity">
+                                <button type="button" class="qty-btn minus" data-product="oliebol_naturel">-</button>
+                                <input type="number" id="oliebol_naturel" name="oliebol_naturel" value="0" min="0" max="100" readonly>
+                                <button type="button" class="qty-btn plus" data-product="oliebol_naturel">+</button>
+                            </div>
+                        </div>
+
+                        <div class="product-card">
+                            <div class="product-info">
+                                <h3>Appelbeignets</h3>
+                                <p class="product-description">Knapperige appelbeignet met kaneel</p>
+                                <p class="product-price">€ 1,10 per stuk</p>
+                            </div>
+                            <div class="product-quantity">
+                                <button type="button" class="qty-btn minus" data-product="appelbeignet">-</button>
+                                <input type="number" id="appelbeignet" name="appelbeignet" value="0" min="0" max="100" readonly>
+                                <button type="button" class="qty-btn plus" data-product="appelbeignet">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="order-summary-mini">
+                        <span>Totaal: </span>
+                        <span class="total-price" id="totalPrice">€ 0,00</span>
+                    </div>
+
+                    <div class="form-buttons">
+                        <button type="button" class="btn btn-primary" id="toStep2" disabled>
+                            Kies tijdslot →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stap 2: Tijdslot kiezen -->
+                <div class="form-step" id="step2">
+                    <h2>Wanneer wil je ophalen?</h2>
+                    <p class="step-description">31 december 2025 - Kies een tijdslot</p>
+
+                    <div class="timeslot-grid" id="timeslotGrid">
+                        <!-- Tijdsloten worden via JavaScript geladen -->
+                        <p class="loading">Tijdsloten laden...</p>
+                    </div>
+
+                    <div class="form-buttons">
+                        <button type="button" class="btn btn-secondary" id="backToStep1">← Terug</button>
+                        <button type="button" class="btn btn-primary" id="toStep3" disabled>
+                            Vul gegevens in →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stap 3: Contactgegevens -->
+                <div class="form-step" id="step3">
+                    <h2>Jouw gegevens</h2>
+                    <p class="step-description">We sturen je een bevestiging per email</p>
+
+                    <div class="form-fields">
+                        <div class="form-group">
+                            <label for="naam">Naam *</label>
+                            <input type="text" id="naam" name="naam" required placeholder="Je volledige naam">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">E-mailadres *</label>
+                            <input type="email" id="email" name="email" required placeholder="je@email.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="telefoon">Telefoonnummer (WhatsApp) *</label>
+                            <input type="tel" id="telefoon" name="telefoon" required placeholder="+31 6 12345678">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="opmerkingen">Opmerkingen (optioneel)</label>
+                            <textarea id="opmerkingen" name="opmerkingen" rows="3" placeholder="Allergieën of andere opmerkingen"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-buttons">
+                        <button type="button" class="btn btn-secondary" id="backToStep2">← Terug</button>
+                        <button type="button" class="btn btn-primary" id="toStep4">
+                            Controleer bestelling →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stap 4: Bevestiging -->
+                <div class="form-step" id="step4">
+                    <h2>Bevestig je bestelling</h2>
+                    <p class="step-description">Controleer of alles klopt</p>
+
+                    <div class="order-review">
+                        <div class="review-section">
+                            <h3>📦 Je bestelling</h3>
+                            <div id="reviewProducts"></div>
+                            <div class="review-total">
+                                <strong>Totaal te betalen (contant):</strong>
+                                <span id="reviewTotal">€ 0,00</span>
+                            </div>
+                        </div>
+
+                        <div class="review-section">
+                            <h3>🕐 Ophaalmoment</h3>
+                            <p id="reviewTimeslot">-</p>
+                        </div>
+
+                        <div class="review-section">
+                            <h3>👤 Jouw gegevens</h3>
+                            <p id="reviewName">-</p>
+                            <p id="reviewEmail">-</p>
+                            <p id="reviewPhone">-</p>
+                            <p id="reviewNotes" class="review-notes"></p>
+                        </div>
+
+                        <div class="payment-notice">
+                            <p>💶 <strong>Betaling:</strong> Contant bij ophalen</p>
+                            <p>Graag gepast betalen!</p>
+                        </div>
+                    </div>
+
+                    <div class="form-buttons">
+                        <button type="button" class="btn btn-secondary" id="backToStep3">← Terug</button>
+                        <button type="button" class="btn btn-success" id="submitOrder">
+                            ✓ Bestelling plaatsen
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bevestigingspagina -->
+                <div class="form-step" id="stepComplete">
+                    <div class="confirmation">
+                        <div class="confirmation-icon">🎉</div>
+                        <h2>Bedankt voor je bestelling!</h2>
+                        <p>Je ontvangt zo een bevestiging per e-mail met een QR-code.</p>
+
+                        <div class="confirmation-details">
+                            <p><strong>Bestelnummer:</strong> <span id="orderNumber">-</span></p>
+                            <p><strong>Ophalen:</strong> <span id="confirmTimeslot">-</span></p>
+                            <p><strong>Totaal:</strong> <span id="confirmTotal">-</span></p>
+                        </div>
+
+                        <div class="confirmation-qr" id="confirmationQR">
+                            <!-- QR code wordt hier getoond -->
+                        </div>
+
+                        <div class="confirmation-info">
+                            <h3>📍 Ophaaladres</h3>
+                            <p>Wordt nog bekendgemaakt</p>
+
+                            <h3>💡 Goed om te weten</h3>
+                            <ul>
+                                <li>Neem je QR-code mee (op telefoon of geprint)</li>
+                                <li>Betaling contant - graag gepast!</li>
+                                <li>Kun je niet komen? Laat het ons weten via WhatsApp</li>
+                            </ul>
+                        </div>
+
+                        <button type="button" class="btn btn-primary" onclick="location.reload()">
+                            Nieuwe bestelling plaatsen
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Info sectie -->
+        <section class="info-section">
+            <div class="info-cards">
+                <div class="info-card">
+                    <span class="info-icon">📅</span>
+                    <h3>Ophalen</h3>
+                    <p>31 december 2025<br>Kies je eigen tijdslot</p>
+                </div>
+                <div class="info-card">
+                    <span class="info-icon">💶</span>
+                    <h3>Betaling</h3>
+                    <p>Contant bij ophalen<br>Graag gepast!</p>
+                </div>
+                <div class="info-card">
+                    <span class="info-icon">📱</span>
+                    <h3>QR-code</h3>
+                    <p>Je krijgt een QR-code<br>per e-mail</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>© 2025 Oliebollen Costa Blanca</p>
+            <p>Vragen? WhatsApp ons!</p>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

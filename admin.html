@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Admin - Oliebollen Costa Blanca</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body class="admin-body">
+    <header class="admin-header">
+        <h1>🍩 Admin Panel</h1>
+        <span id="connectionStatus" class="connection-status">●</span>
+    </header>
+
+    <nav class="admin-nav">
+        <button class="active" data-tab="scanner">📷 Scanner</button>
+        <button data-tab="orders">📋 Bestellingen</button>
+        <button data-tab="capacity">⚙️ Capaciteit</button>
+        <button data-tab="totals">📊 Totalen</button>
+    </nav>
+
+    <main class="admin-content">
+        <!-- Scanner Tab -->
+        <section id="tab-scanner" class="admin-tab active">
+            <div class="scanner-container">
+                <div id="qr-reader"></div>
+                <div class="scanner-overlay">
+                    <button id="startScanBtn" class="btn btn-primary">📷 Start Scanner</button>
+                </div>
+            </div>
+
+            <!-- Scanned Order Display -->
+            <div id="scannedOrder" class="order-display" style="display: none;">
+                <div class="order-card">
+                    <div class="order-card-header">
+                        <span class="order-number" id="scanOrderNumber">-</span>
+                        <span class="order-status pending" id="scanOrderStatus">Wachtend</span>
+                    </div>
+                    <div class="order-card-body">
+                        <div class="order-customer" id="scanCustomer">-</div>
+                        <div class="order-timeslot" id="scanTimeslot">-</div>
+                        <div class="order-items" id="scanItems">-</div>
+                        <div class="order-total" id="scanTotal">€ 0,00</div>
+
+                        <!-- Wisselgeld Calculator -->
+                        <div class="calculator">
+                            <h3>💶 Wisselgeld Calculator</h3>
+                            <div class="calc-row">
+                                <span class="calc-label">Te betalen:</span>
+                                <span class="calc-value total" id="calcTotal">€ 0,00</span>
+                            </div>
+                            <div class="calc-row">
+                                <span class="calc-label">Ontvangen:</span>
+                                <input type="number" class="calc-input" id="calcReceived"
+                                       placeholder="0,00" step="0.01" min="0" inputmode="decimal">
+                            </div>
+                            <div class="calc-row">
+                                <span class="calc-label">Wisselgeld:</span>
+                                <span class="calc-value change" id="calcChange">€ 0,00</span>
+                            </div>
+                            <div class="quick-amounts">
+                                <button class="quick-amount-btn" data-amount="5">€5</button>
+                                <button class="quick-amount-btn" data-amount="10">€10</button>
+                                <button class="quick-amount-btn" data-amount="20">€20</button>
+                                <button class="quick-amount-btn" data-amount="50">€50</button>
+                            </div>
+                        </div>
+
+                        <div class="order-actions">
+                            <button class="btn btn-success" id="completeOrderBtn">✓ Afgehandeld</button>
+                            <button class="btn btn-secondary" id="cancelScanBtn">✕ Annuleren</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Order Lookup -->
+            <div class="manual-lookup">
+                <h3>Of zoek handmatig:</h3>
+                <div class="lookup-form">
+                    <input type="text" id="manualOrderNumber" placeholder="Bestelnummer of naam..." class="form-input">
+                    <button id="lookupBtn" class="btn btn-primary">Zoeken</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Orders Tab -->
+        <section id="tab-orders" class="admin-tab">
+            <div class="orders-filter">
+                <select id="timeslotFilter" class="filter-select">
+                    <option value="">Alle tijdsloten</option>
+                </select>
+                <select id="statusFilter" class="filter-select">
+                    <option value="">Alle statussen</option>
+                    <option value="pending">Wachtend</option>
+                    <option value="completed">Afgehandeld</option>
+                    <option value="noshow">No-show</option>
+                </select>
+            </div>
+
+            <div class="orders-summary">
+                <div class="summary-item">
+                    <span class="summary-count" id="pendingCount">0</span>
+                    <span class="summary-label">Wachtend</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-count" id="completedCount">0</span>
+                    <span class="summary-label">Opgehaald</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-count" id="noshowCount">0</span>
+                    <span class="summary-label">No-show</span>
+                </div>
+            </div>
+
+            <div id="ordersList" class="orders-list">
+                <!-- Orders worden hier geladen -->
+                <p class="loading">Bestellingen laden...</p>
+            </div>
+        </section>
+
+        <!-- Capacity Tab -->
+        <section id="tab-capacity" class="admin-tab">
+            <div class="capacity-header">
+                <h2>Capaciteit per tijdslot</h2>
+                <p>31 december 2025</p>
+            </div>
+
+            <div class="capacity-actions">
+                <button id="setAllCapacity" class="btn btn-secondary">Stel alles in op:</button>
+                <input type="number" id="bulkCapacity" value="10" min="0" max="100" class="capacity-input">
+            </div>
+
+            <div id="capacityList" class="capacity-list">
+                <!-- Capaciteit items worden hier geladen -->
+            </div>
+
+            <div class="capacity-save">
+                <button id="saveCapacity" class="btn btn-success">💾 Opslaan</button>
+            </div>
+        </section>
+
+        <!-- Totals Tab -->
+        <section id="tab-totals" class="admin-tab">
+            <div class="totals-header">
+                <h2>📊 Totaaloverzicht</h2>
+                <p>Voor inkoop en planning</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalOrders">0</div>
+                    <div class="stat-label">Bestellingen</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalRevenue">€0</div>
+                    <div class="stat-label">Omzet</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalItems">0</div>
+                    <div class="stat-label">Stuks totaal</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgOrderValue">€0</div>
+                    <div class="stat-label">Gem. bestelling</div>
+                </div>
+            </div>
+
+            <div class="product-totals">
+                <h3>Per product</h3>
+                <div class="product-total-card">
+                    <span class="product-name">Oliebollen met krenten</span>
+                    <span class="product-count" id="totalKrenten">0 stuks</span>
+                </div>
+                <div class="product-total-card">
+                    <span class="product-name">Oliebollen zonder krenten</span>
+                    <span class="product-count" id="totalNaturel">0 stuks</span>
+                </div>
+                <div class="product-total-card">
+                    <span class="product-name">Appelbeignets</span>
+                    <span class="product-count" id="totalAppel">0 stuks</span>
+                </div>
+            </div>
+
+            <div class="per-timeslot-totals">
+                <h3>Per tijdslot</h3>
+                <div id="timeslotTotals" class="timeslot-totals-list">
+                    <!-- Per timeslot breakdown -->
+                </div>
+            </div>
+
+            <div class="export-actions">
+                <button id="exportPdf" class="btn btn-secondary">📄 Export PDF</button>
+                <button id="exportCsv" class="btn btn-secondary">📊 Export Excel</button>
+                <button id="printList" class="btn btn-secondary">🖨️ Print lijst</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- No-show Alert Modal -->
+    <div id="noshowModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>⚠️ No-show melden</h3>
+            <p>Wil je deze klant als no-show markeren?</p>
+            <p class="modal-customer" id="noshowCustomer">-</p>
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="confirmNoshow">Markeer als no-show</button>
+                <button class="btn btn-secondary" id="cancelNoshow">Annuleren</button>
+            </div>
+            <div class="whatsapp-action">
+                <a href="#" id="whatsappLink" class="btn btn-success">
+                    📱 Stuur WhatsApp bericht
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>
