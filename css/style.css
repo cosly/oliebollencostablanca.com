@@ -1333,3 +1333,88 @@ footer p {
     z-index: 1000;
     box-shadow: var(--shadow-lg);
 }
+
+/* Timeslot Status Indicator */
+.timeslot-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    margin: 12px 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.timeslot-status-icon {
+    font-size: 1.3rem;
+}
+
+/* On time - green */
+.timeslot-status.ontime {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 2px solid var(--success);
+    color: #155724;
+}
+
+/* Almost time / just ended - blue info */
+.timeslot-status.almost,
+.timeslot-status.justended {
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+    border: 2px solid #17a2b8;
+    color: #0c5460;
+}
+
+/* Early - orange warning */
+.timeslot-status.early {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border: 2px solid var(--warning);
+    color: #856404;
+}
+
+.timeslot-status.early.severe {
+    background: linear-gradient(135deg, #ffe6cc 0%, #ffd699 100%);
+    border: 2px solid var(--primary);
+    color: #8a5a00;
+    animation: pulse-warning 1.5s infinite;
+}
+
+/* Late - red danger */
+.timeslot-status.late {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    border: 2px solid var(--danger);
+    color: #721c24;
+}
+
+.timeslot-status.late.severe {
+    background: linear-gradient(135deg, #f5c6cb 0%, #f1b0b7 100%);
+    border: 3px solid var(--danger);
+    color: #721c24;
+    animation: pulse-danger 1s infinite;
+}
+
+/* Unknown */
+.timeslot-status.unknown {
+    background: var(--gray-200);
+    border: 2px solid var(--gray-300);
+    color: var(--gray-700);
+}
+
+/* Pulse animations for severe cases */
+@keyframes pulse-warning {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(243, 156, 18, 0);
+    }
+}
+
+@keyframes pulse-danger {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(231, 76, 60, 0);
+    }
+}

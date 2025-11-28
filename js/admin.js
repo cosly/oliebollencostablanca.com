@@ -160,7 +160,18 @@ function displayScannedOrder(order) {
 
     document.getElementById('scanOrderNumber').textContent = order.orderNumber;
     document.getElementById('scanCustomer').textContent = order.customer.naam;
-    document.getElementById('scanTimeslot').textContent = order.timeslotLabel || order.timeslot;
+    document.getElementById('scanTimeslot').textContent = '🕐 ' + (order.timeslotLabel || order.timeslot);
+
+    // Check timeslot status
+    const timeslotStatus = getTimeslotStatus(order);
+    const statusEl = document.getElementById('scanTimeslotStatus');
+    const iconEl = statusEl.querySelector('.timeslot-status-icon');
+    const textEl = statusEl.querySelector('.timeslot-status-text');
+
+    iconEl.textContent = timeslotStatus.icon;
+    textEl.textContent = timeslotStatus.message;
+    statusEl.className = `timeslot-status ${timeslotStatus.status} ${timeslotStatus.severity || ''}`;
+    statusEl.style.display = 'flex';
 
     // Build items list
     let itemsHtml = '';
@@ -676,6 +687,108 @@ function exportToCsv() {
     link.href = URL.createObjectURL(blob);
     link.download = `oliebollen_bestellingen_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+}
+
+// =====================
+// Timeslot Validation
+// =====================
+function getTimeslotStatus(order) {
+    // Parse the timeslot times from label (e.g., "10:00 - 10:30")
+    const timeslotLabel = order.timeslotLabel || order.timeslot;
+    const timeMatch = timeslotLabel.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+
+    if (!timeMatch) {
+        // Try to get from timeslots array
+        const slot = timeslots.find(s => s.id === order.timeslot);
+        if (slot && slot.start && slot.end) {
+            return checkTimeAgainstSlot(slot.start, slot.end);
+        }
+        return { status: 'unknown', message: 'Tijdslot niet te bepalen' };
+    }
+
+    const startTime = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`;
+    const endTime = `${timeMatch[3].padStart(2, '0')}:${timeMatch[4]}`;
+
+    return checkTimeAgainstSlot(startTime, endTime);
+}
+
+function checkTimeAgainstSlot(startTime, endTime) {
+    const now = new Date();
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const currentTimeMinutes = currentHours * 60 + currentMinutes;
+
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    const startTimeMinutes = startHour * 60 + startMin;
+    const endTimeMinutes = endHour * 60 + endMin;
+
+    // Calculate difference in minutes
+    const minutesUntilStart = startTimeMinutes - currentTimeMinutes;
+    const minutesUntilEnd = endTimeMinutes - currentTimeMinutes;
+
+    // Define thresholds
+    const EARLY_THRESHOLD = 15; // More than 15 min early is "te vroeg"
+    const LATE_THRESHOLD = 15;  // More than 15 min late is "te laat"
+
+    if (minutesUntilStart > EARLY_THRESHOLD) {
+        // Customer is early
+        const hoursEarly = Math.floor(minutesUntilStart / 60);
+        const minsEarly = minutesUntilStart % 60;
+        let timeText;
+        if (hoursEarly > 0) {
+            timeText = `${hoursEarly} uur${minsEarly > 0 ? ` en ${minsEarly} min` : ''}`;
+        } else {
+            timeText = `${minsEarly} minuten`;
+        }
+        return {
+            status: 'early',
+            message: `Te vroeg! Nog ${timeText} tot tijdslot`,
+            icon: '⏰',
+            severity: minutesUntilStart > 60 ? 'severe' : 'warning'
+        };
+    } else if (minutesUntilEnd < -LATE_THRESHOLD) {
+        // Customer is late (after their timeslot ended)
+        const minutesLate = Math.abs(minutesUntilEnd);
+        const hoursLate = Math.floor(minutesLate / 60);
+        const minsLate = minutesLate % 60;
+        let timeText;
+        if (hoursLate > 0) {
+            timeText = `${hoursLate} uur${minsLate > 0 ? ` en ${minsLate} min` : ''}`;
+        } else {
+            timeText = `${minsLate} minuten`;
+        }
+        return {
+            status: 'late',
+            message: `Te laat! Tijdslot is ${timeText} geleden geëindigd`,
+            icon: '⚠️',
+            severity: minutesLate > 60 ? 'severe' : 'warning'
+        };
+    } else if (minutesUntilStart > 0 && minutesUntilStart <= EARLY_THRESHOLD) {
+        // Almost time (within 15 min before)
+        return {
+            status: 'almost',
+            message: `Bijna tijd! Nog ${minutesUntilStart} minuten`,
+            icon: '🕐',
+            severity: 'info'
+        };
+    } else if (minutesUntilEnd < 0 && minutesUntilEnd >= -LATE_THRESHOLD) {
+        // Just ended (within 15 min after)
+        return {
+            status: 'justended',
+            message: `Net afgelopen (${Math.abs(minutesUntilEnd)} min geleden)`,
+            icon: '✓',
+            severity: 'info'
+        };
+    } else {
+        // On time (during the timeslot)
+        return {
+            status: 'ontime',
+            message: 'Op tijd! ✓',
+            icon: '✅',
+            severity: 'success'
+        };
+    }
 }
 
 // =====================
