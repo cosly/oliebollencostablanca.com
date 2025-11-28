@@ -35,6 +35,8 @@ function escapeHtml(text) {
 // =====================
 // Authentication
 // =====================
+let pendingToken = null; // Temporary token during login flow
+
 function getAuthHeaders() {
     return authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
 }
@@ -43,7 +45,7 @@ async function checkAuth() {
     authToken = localStorage.getItem(SESSION_KEY);
 
     if (!authToken) {
-        showLogin();
+        showLoginStep1();
         return false;
     }
 
@@ -75,13 +77,23 @@ async function checkAuth() {
     // Token invalid or expired
     localStorage.removeItem(SESSION_KEY);
     authToken = null;
-    showLogin();
+    showLoginStep1();
     return false;
 }
 
-function showLogin() {
+function showLoginStep1() {
     document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('adminContent').style.display = 'none';
+    document.getElementById('emailForm').style.display = 'block';
+    document.getElementById('tokenForm').style.display = 'none';
+}
+
+function showLoginStep2(email) {
+    document.getElementById('emailForm').style.display = 'none';
+    document.getElementById('tokenForm').style.display = 'block';
+    document.getElementById('sentToEmail').textContent = email;
+    document.getElementById('loginToken').value = '';
+    document.getElementById('loginToken').focus();
 }
 
 function showAdmin() {
@@ -89,22 +101,60 @@ function showAdmin() {
     document.getElementById('adminContent').style.display = 'block';
 }
 
-async function handleLogin(e) {
+// Step 1: Request code via email
+async function handleEmailSubmit(e) {
     e.preventDefault();
 
-    const password = document.getElementById('adminPassword').value;
-    const errorEl = document.getElementById('loginError');
+    const email = document.getElementById('adminEmail').value.trim();
+    const errorEl = document.getElementById('emailError');
     const submitBtn = e.target.querySelector('button[type="submit"]');
 
     errorEl.style.display = 'none';
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Bezig...';
+    submitBtn.textContent = 'Verzenden...';
 
     try {
-        const response = await fetch(`${API_BASE}/auth/login`, {
+        const response = await fetch(`${API_BASE}/auth/request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password })
+            body: JSON.stringify({ email })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.pendingToken) {
+            pendingToken = data.pendingToken;
+            showLoginStep2(email);
+        } else {
+            errorEl.textContent = data.message || 'Kon geen code versturen';
+            errorEl.style.display = 'block';
+        }
+    } catch (error) {
+        errorEl.textContent = 'Verbindingsfout. Probeer opnieuw.';
+        errorEl.style.display = 'block';
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Verstuur code';
+}
+
+// Step 2: Verify the code
+async function handleTokenSubmit(e) {
+    e.preventDefault();
+
+    const code = document.getElementById('loginToken').value.trim();
+    const errorEl = document.getElementById('tokenError');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+
+    errorEl.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Controleren...';
+
+    try {
+        const response = await fetch(`${API_BASE}/auth/verify-code`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pendingToken, code })
         });
 
         const data = await response.json();
@@ -112,10 +162,11 @@ async function handleLogin(e) {
         if (response.ok && data.token) {
             authToken = data.token;
             localStorage.setItem(SESSION_KEY, data.token);
+            pendingToken = null;
             showAdmin();
             initAdminPanel();
         } else {
-            errorEl.textContent = data.message || 'Onjuist wachtwoord';
+            errorEl.textContent = data.message || 'Onjuiste code';
             errorEl.style.display = 'block';
         }
     } catch (error) {
@@ -127,17 +178,26 @@ async function handleLogin(e) {
     submitBtn.textContent = 'Inloggen';
 }
 
+function handleBackToEmail() {
+    pendingToken = null;
+    showLoginStep1();
+}
+
 function handleLogout() {
     localStorage.removeItem(SESSION_KEY);
     authToken = null;
-    document.getElementById('adminPassword').value = '';
-    showLogin();
+    pendingToken = null;
+    document.getElementById('adminEmail').value = '';
+    document.getElementById('loginToken').value = '';
+    showLoginStep1();
 }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-    // Setup login form
-    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    // Setup login forms
+    document.getElementById('emailForm').addEventListener('submit', handleEmailSubmit);
+    document.getElementById('tokenForm').addEventListener('submit', handleTokenSubmit);
+    document.getElementById('backToEmail').addEventListener('click', handleBackToEmail);
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 
     // Check authentication

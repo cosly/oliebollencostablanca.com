@@ -66,41 +66,105 @@ function corsHeaders(request) {
     };
 }
 
-// Session token generation and validation
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+// Token durations
+const CODE_DURATION = 10 * 60 * 1000; // 10 minutes for login code
+const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours for session
 
-async function generateSessionToken(password, env) {
-    const timestamp = Date.now();
-    const data = `${password}:${timestamp}:${env.ADMIN_PASSWORD}`;
-    const encoder = new TextEncoder();
-    const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(data));
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return `${hash}:${timestamp}`;
+// Generate a 6-digit code
+function generateLoginCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-async function validateSessionToken(token, env) {
-    if (!token || !env.ADMIN_PASSWORD) return false;
-
-    const parts = token.split(':');
-    if (parts.length !== 2) return false;
-
-    const [hash, timestamp] = parts;
-    const tokenTime = parseInt(timestamp);
-
-    // Check if token is expired
-    if (Date.now() - tokenTime > SESSION_DURATION) {
-        return false;
-    }
-
-    // Verify the hash
-    const data = `${env.ADMIN_PASSWORD}:${timestamp}:${env.ADMIN_PASSWORD}`;
+// Create HMAC signature
+async function createHmac(data, secret) {
     const encoder = new TextEncoder();
-    const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(data));
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const expectedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const key = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+    );
+    const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
+    return Array.from(new Uint8Array(signature))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+}
 
-    return hash === expectedHash;
+// Verify HMAC signature
+async function verifyHmac(data, signature, secret) {
+    const expectedSignature = await createHmac(data, secret);
+    return signature === expectedSignature;
+}
+
+// Generate pending token (contains encrypted code info)
+async function generatePendingToken(email, code, env) {
+    const timestamp = Date.now();
+    const data = `${email}:${code}:${timestamp}`;
+    const signature = await createHmac(data, env.ADMIN_SECRET || 'default-secret');
+    return Buffer.from(JSON.stringify({ email, code, timestamp, signature })).toString('base64');
+}
+
+// Verify pending token and code
+async function verifyPendingToken(pendingToken, submittedCode, env) {
+    try {
+        const decoded = JSON.parse(Buffer.from(pendingToken, 'base64').toString());
+        const { email, code, timestamp, signature } = decoded;
+
+        // Check expiry
+        if (Date.now() - timestamp > CODE_DURATION) {
+            return { valid: false, error: 'Code verlopen' };
+        }
+
+        // Verify signature
+        const data = `${email}:${code}:${timestamp}`;
+        if (!(await verifyHmac(data, signature, env.ADMIN_SECRET || 'default-secret'))) {
+            return { valid: false, error: 'Ongeldige token' };
+        }
+
+        // Check code
+        if (code !== submittedCode) {
+            return { valid: false, error: 'Onjuiste code' };
+        }
+
+        return { valid: true, email };
+    } catch (e) {
+        return { valid: false, error: 'Ongeldige token' };
+    }
+}
+
+// Generate session token
+async function generateSessionToken(email, env) {
+    const timestamp = Date.now();
+    const sessionId = crypto.randomUUID();
+    const data = `${email}:${sessionId}:${timestamp}`;
+    const signature = await createHmac(data, env.ADMIN_SECRET || 'default-secret');
+    return Buffer.from(JSON.stringify({ email, sessionId, timestamp, signature })).toString('base64');
+}
+
+// Validate session token
+async function validateSessionToken(token, env) {
+    if (!token) return { valid: false };
+
+    try {
+        const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
+        const { email, sessionId, timestamp, signature } = decoded;
+
+        // Check expiry
+        if (Date.now() - timestamp > SESSION_DURATION) {
+            return { valid: false, expired: true };
+        }
+
+        // Verify signature
+        const data = `${email}:${sessionId}:${timestamp}`;
+        if (!(await verifyHmac(data, signature, env.ADMIN_SECRET || 'default-secret'))) {
+            return { valid: false };
+        }
+
+        return { valid: true, email, sessionId };
+    } catch (e) {
+        return { valid: false };
+    }
 }
 
 // Check if request is authenticated for admin routes
@@ -110,7 +174,8 @@ async function isAuthenticated(request, env) {
         return false;
     }
     const token = authHeader.substring(7);
-    return await validateSessionToken(token, env);
+    const result = await validateSessionToken(token, env);
+    return result.valid;
 }
 
 // Admin-only routes that require authentication
@@ -147,14 +212,19 @@ export default {
 
 async function handleAPI(request, env, ctx, path) {
     try {
-        // POST /api/auth/login - No auth required
-        if (path === '/api/auth/login' && request.method === 'POST') {
-            return await handleLogin(request, env);
+        // POST /api/auth/request - Request login code via email
+        if (path === '/api/auth/request' && request.method === 'POST') {
+            return await handleRequestCode(request, env);
         }
 
-        // POST /api/auth/verify - Verify token is still valid
+        // POST /api/auth/verify-code - Verify the login code and get session token
+        if (path === '/api/auth/verify-code' && request.method === 'POST') {
+            return await handleVerifyCode(request, env);
+        }
+
+        // POST /api/auth/verify - Verify session token is still valid
         if (path === '/api/auth/verify' && request.method === 'POST') {
-            return await handleVerify(request, env);
+            return await handleVerifySession(request, env);
         }
 
         // Check authentication for admin routes
@@ -435,56 +505,158 @@ async function updateCapacity(request, env) {
 // =====================
 // Authentication
 // =====================
-async function handleLogin(request, env) {
-    const data = await request.json();
-    const { password } = data;
 
-    if (!password) {
+// Step 1: Request login code via email
+async function handleRequestCode(request, env) {
+    const data = await request.json();
+    const { email } = data;
+
+    if (!email) {
         return Response.json(
-            { error: 'Password required' },
+            { error: 'Email required', message: 'Email is verplicht' },
             { status: 400, headers: corsHeaders(request) }
         );
     }
 
-    // Check password against environment variable
-    if (!env.ADMIN_PASSWORD) {
-        console.error('ADMIN_PASSWORD not configured');
+    // Check if email is allowed (must match ADMIN_EMAIL)
+    if (!env.ADMIN_EMAIL) {
+        console.error('ADMIN_EMAIL not configured');
         return Response.json(
             { error: 'Server configuration error' },
             { status: 500, headers: corsHeaders(request) }
         );
     }
 
-    if (password !== env.ADMIN_PASSWORD) {
+    if (email.toLowerCase() !== env.ADMIN_EMAIL.toLowerCase()) {
         return Response.json(
-            { error: 'Invalid password', message: 'Onjuist wachtwoord' },
+            { error: 'Unauthorized', message: 'Dit email adres heeft geen toegang' },
+            { status: 403, headers: corsHeaders(request) }
+        );
+    }
+
+    // Generate login code
+    const code = generateLoginCode();
+
+    // Generate pending token
+    const pendingToken = await generatePendingToken(email, code, env);
+
+    // Send code via email
+    if (env.RESEND_API_KEY) {
+        await sendLoginCodeEmail(env, email, code);
+    } else {
+        console.log('Login code (no email configured):', code);
+    }
+
+    return Response.json(
+        { success: true, pendingToken, message: 'Code verstuurd naar je email' },
+        { headers: corsHeaders(request) }
+    );
+}
+
+// Step 2: Verify the code and issue session token
+async function handleVerifyCode(request, env) {
+    const data = await request.json();
+    const { pendingToken, code } = data;
+
+    if (!pendingToken || !code) {
+        return Response.json(
+            { error: 'Missing data', message: 'Token en code zijn verplicht' },
+            { status: 400, headers: corsHeaders(request) }
+        );
+    }
+
+    // Verify pending token and code
+    const result = await verifyPendingToken(pendingToken, code, env);
+
+    if (!result.valid) {
+        return Response.json(
+            { error: 'Invalid code', message: result.error },
             { status: 401, headers: corsHeaders(request) }
         );
     }
 
     // Generate session token
-    const token = await generateSessionToken(password, env);
+    const sessionToken = await generateSessionToken(result.email, env);
 
     return Response.json(
-        { success: true, token, expiresIn: SESSION_DURATION },
+        { success: true, token: sessionToken, expiresIn: SESSION_DURATION },
         { headers: corsHeaders(request) }
     );
 }
 
-async function handleVerify(request, env) {
-    const isValid = await isAuthenticated(request, env);
-
-    if (isValid) {
+// Verify existing session token
+async function handleVerifySession(request, env) {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return Response.json(
-            { valid: true },
+            { valid: false, message: 'Geen token' },
+            { status: 401, headers: corsHeaders(request) }
+        );
+    }
+
+    const token = authHeader.substring(7);
+    const result = await validateSessionToken(token, env);
+
+    if (result.valid) {
+        return Response.json(
+            { valid: true, email: result.email },
             { headers: corsHeaders(request) }
         );
     }
 
     return Response.json(
-        { valid: false, message: 'Token verlopen of ongeldig' },
+        { valid: false, message: result.expired ? 'Sessie verlopen' : 'Ongeldige sessie' },
         { status: 401, headers: corsHeaders(request) }
     );
+}
+
+// Send login code email
+async function sendLoginCodeEmail(env, email, code) {
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;margin:0;padding:0;background:#f5f5f5">
+    <div style="max-width:400px;margin:0 auto;padding:20px">
+        <div style="background:#2c3e50;color:white;padding:24px;text-align:center;border-radius:12px 12px 0 0">
+            <h1 style="margin:0;font-size:20px">Admin Login</h1>
+            <p style="margin:8px 0 0;opacity:0.9;font-size:14px">Oliebollen Costa Blanca</p>
+        </div>
+        <div style="background:white;padding:24px;border-radius:0 0 12px 12px">
+            <p style="font-size:15px;margin:0 0 20px;color:#444">
+                Je login code is:
+            </p>
+            <div style="background:#f8f9fa;border-radius:8px;padding:20px;text-align:center;margin:0 0 20px">
+                <p style="margin:0;font-size:32px;font-weight:bold;letter-spacing:8px;color:#2c3e50">${code}</p>
+            </div>
+            <p style="font-size:13px;color:#666;margin:0">
+                Deze code is 10 minuten geldig. Deel deze code met niemand.
+            </p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+    try {
+        await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                from: 'Oliebollen Costa Blanca <noreply@oliebollencostablanca.com>',
+                to: email,
+                subject: `Je login code: ${code}`,
+                html: emailHtml
+            })
+        });
+    } catch (error) {
+        console.error('Login code email error:', error);
+    }
 }
 
 // =====================
