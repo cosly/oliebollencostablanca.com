@@ -7,10 +7,15 @@ export async function onRequestGet(context) {
             `SELECT * FROM timeslots ORDER BY id`
         ).all();
 
-        // Calculate available slots
+        // Calculate available slots and generate label
         const slots = results.map(slot => ({
-            ...slot,
-            available: slot.capacity - slot.booked
+            id: slot.id,
+            start: slot.start_time,
+            end: slot.end_time,
+            label: `${slot.start_time} - ${slot.end_time}`,
+            capacity: slot.capacity,
+            booked: slot.booked || 0,
+            available: slot.capacity - (slot.booked || 0)
         }));
 
         return Response.json(slots);
