@@ -123,6 +123,109 @@
             font-size: 1.4rem;
             font-weight: 700;
         }
+        /* Countdown Timer */
+        .countdown-section {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 16px;
+            text-align: center;
+            color: white;
+        }
+        .countdown-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+        .countdown-timer {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+        .countdown-unit {
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 12px 16px;
+            min-width: 60px;
+        }
+        .countdown-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .countdown-name {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+        .countdown-status {
+            margin-top: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .countdown-status.upcoming {
+            color: #f1c40f;
+        }
+        .countdown-status.now {
+            color: #2ecc71;
+            animation: pulse-text 1s infinite;
+        }
+        .countdown-status.passed {
+            color: #e74c3c;
+        }
+        @keyframes pulse-text {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        /* Location Section */
+        .location-section {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+        }
+        .location-section h3 {
+            font-size: 0.9rem;
+            color: var(--gray-500);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .location-address {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 4px;
+        }
+        .location-city {
+            color: var(--gray-600);
+            margin-bottom: 16px;
+        }
+        .location-map {
+            width: 100%;
+            height: 150px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            margin-bottom: 12px;
+            background: var(--gray-200);
+        }
+        .location-map img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .btn-directions {
+            background: #4285f4;
+            color: white;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
         .action-buttons {
             display: flex;
             flex-direction: column;
@@ -402,10 +505,46 @@
                 </div>
             </div>
 
+            <!-- Countdown Timer -->
+            <div class="countdown-section" id="countdownSection">
+                <div class="countdown-label">Tijd tot ophalen</div>
+                <div class="countdown-timer" id="countdownTimer">
+                    <div class="countdown-unit">
+                        <div class="countdown-value" id="countDays">--</div>
+                        <div class="countdown-name">Dagen</div>
+                    </div>
+                    <div class="countdown-unit">
+                        <div class="countdown-value" id="countHours">--</div>
+                        <div class="countdown-name">Uren</div>
+                    </div>
+                    <div class="countdown-unit">
+                        <div class="countdown-value" id="countMinutes">--</div>
+                        <div class="countdown-name">Min</div>
+                    </div>
+                </div>
+                <div class="countdown-status upcoming" id="countdownStatus">Je tijdslot nadert</div>
+            </div>
+
             <!-- Timeslot -->
             <div class="timeslot-badge">
                 <div class="date">31 december 2025</div>
                 <div class="time" id="displayTimeslot">10:00 - 10:30</div>
+            </div>
+
+            <!-- Location Section -->
+            <div class="location-section" id="locationSection">
+                <h3>Ophaallocatie</h3>
+                <div class="location-address" id="locationAddress">Adres wordt bekendgemaakt</div>
+                <div class="location-city" id="locationCity">Costa Blanca, Spanje</div>
+                <div class="location-map" id="locationMap">
+                    <!-- Map image will be loaded here -->
+                </div>
+                <a href="#" class="btn btn-directions" id="directionsBtn" target="_blank" style="display: none;">
+                    Navigeer naar ophaallocatie
+                </a>
+                <p id="locationPending" style="color: var(--gray-500); font-size: 0.85rem; text-align: center; margin-top: 8px;">
+                    Het exacte adres wordt binnenkort via e-mail bekendgemaakt.
+                </p>
             </div>
 
             <!-- Order Details -->
@@ -427,12 +566,6 @@
                     <span class="info-label">Naam</span>
                     <span class="info-value" id="displayName">-</span>
                 </div>
-            </div>
-
-            <!-- Location Info -->
-            <div class="order-info-card">
-                <h3>Ophaallocatie</h3>
-                <p style="color: var(--gray-700);">Wordt nog bekendgemaakt via e-mail</p>
             </div>
 
             <!-- Action Buttons -->
@@ -621,6 +754,135 @@
             }
         }
 
+        // =====================
+        // Countdown Timer
+        // =====================
+        let countdownInterval = null;
+        let timeslotStartTime = null;
+        let timeslotEndTime = null;
+
+        // Pickup location config
+        const PICKUP_LOCATION = {
+            address: "Carrer Melisso, 21",
+            city: "03739 Xàbia, Alicante",
+            lat: 38.7856,
+            lng: 0.1566,
+            googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Carrer+Melisso+21+03739+Xabia+Alicante"
+        };
+
+        function initCountdown(timeslotLabel) {
+            // Parse timeslot (e.g., "10:00 - 10:30")
+            const match = timeslotLabel.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+            if (!match) {
+                document.getElementById('countdownSection').style.display = 'none';
+                return;
+            }
+
+            const startHour = parseInt(match[1]);
+            const startMin = parseInt(match[2]);
+            const endHour = parseInt(match[3]);
+            const endMin = parseInt(match[4]);
+
+            // Event date: 31 december 2025
+            timeslotStartTime = new Date(2025, 11, 31, startHour, startMin, 0);
+            timeslotEndTime = new Date(2025, 11, 31, endHour, endMin, 0);
+
+            // Update countdown immediately
+            updateCountdown();
+
+            // Start interval
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        function updateCountdown() {
+            const now = new Date();
+            const diff = timeslotStartTime - now;
+            const diffEnd = timeslotEndTime - now;
+
+            const statusEl = document.getElementById('countdownStatus');
+            const daysEl = document.getElementById('countDays');
+            const hoursEl = document.getElementById('countHours');
+            const minutesEl = document.getElementById('countMinutes');
+
+            if (diff <= 0 && diffEnd >= 0) {
+                // Currently in timeslot
+                daysEl.textContent = '0';
+                hoursEl.textContent = '0';
+                minutesEl.textContent = '0';
+                statusEl.textContent = 'Je tijdslot is nu!';
+                statusEl.className = 'countdown-status now';
+            } else if (diffEnd < 0) {
+                // Timeslot passed
+                daysEl.textContent = '0';
+                hoursEl.textContent = '0';
+                minutesEl.textContent = '0';
+                statusEl.textContent = 'Je tijdslot is verstreken';
+                statusEl.className = 'countdown-status passed';
+                clearInterval(countdownInterval);
+            } else {
+                // Upcoming
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+                daysEl.textContent = days;
+                hoursEl.textContent = hours;
+                minutesEl.textContent = minutes;
+
+                if (days === 0 && hours < 1) {
+                    statusEl.textContent = 'Bijna tijd!';
+                    statusEl.className = 'countdown-status now';
+                } else if (days === 0) {
+                    statusEl.textContent = 'Vandaag ophalen!';
+                    statusEl.className = 'countdown-status upcoming';
+                } else if (days === 1) {
+                    statusEl.textContent = 'Morgen ophalen!';
+                    statusEl.className = 'countdown-status upcoming';
+                } else {
+                    statusEl.textContent = 'Je tijdslot nadert';
+                    statusEl.className = 'countdown-status upcoming';
+                }
+            }
+        }
+
+        // =====================
+        // Location Setup
+        // =====================
+        function setupLocation() {
+            const addressEl = document.getElementById('locationAddress');
+            const cityEl = document.getElementById('locationCity');
+            const mapEl = document.getElementById('locationMap');
+            const directionsBtn = document.getElementById('directionsBtn');
+            const pendingEl = document.getElementById('locationPending');
+
+            if (PICKUP_LOCATION.address && PICKUP_LOCATION.lat && PICKUP_LOCATION.lng) {
+                // Location is known - show everything
+                addressEl.textContent = PICKUP_LOCATION.address;
+                cityEl.textContent = PICKUP_LOCATION.city;
+                pendingEl.style.display = 'none';
+
+                // Static map image
+                const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${PICKUP_LOCATION.lat},${PICKUP_LOCATION.lng}&zoom=15&size=400x150&markers=color:orange%7C${PICKUP_LOCATION.lat},${PICKUP_LOCATION.lng}&key=YOUR_API_KEY`;
+                // Fallback: use OpenStreetMap embed or placeholder
+                mapEl.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#e8f4f8;color:#666;font-size:0.9rem;">Kaart beschikbaar op 31 december</div>`;
+
+                // Directions button
+                if (PICKUP_LOCATION.googleMapsUrl) {
+                    directionsBtn.href = PICKUP_LOCATION.googleMapsUrl;
+                    directionsBtn.style.display = 'flex';
+                } else {
+                    directionsBtn.href = `https://www.google.com/maps/dir/?api=1&destination=${PICKUP_LOCATION.lat},${PICKUP_LOCATION.lng}`;
+                    directionsBtn.style.display = 'flex';
+                }
+            } else {
+                // Location not yet known
+                addressEl.textContent = 'Wordt binnenkort bekendgemaakt';
+                mapEl.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--gray-100);color:var(--gray-500);font-size:0.9rem;">Locatie volgt via e-mail</div>`;
+                directionsBtn.style.display = 'none';
+                pendingEl.style.display = 'block';
+            }
+        }
+
         // Detect device for add-to-home instructions
         function getAddToHomeInstructions() {
             const ua = navigator.userAgent;
@@ -746,6 +1008,15 @@
 
             // Generate QR code
             generateQRCode(order.orderNumber);
+
+            // Initialize countdown timer
+            const timeslotLabel = order.timeslotLabel || order.timeslot;
+            if (timeslotLabel) {
+                initCountdown(timeslotLabel);
+            }
+
+            // Setup location section
+            setupLocation();
 
             // Add-to-home instructions
             document.getElementById('addToHomeInstructions').innerHTML = getAddToHomeInstructions();

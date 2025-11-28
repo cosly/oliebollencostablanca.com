@@ -322,7 +322,8 @@ async function updateCapacity(request, env) {
 // Email
 // =====================
 async function sendConfirmationEmail(env, customer, orderNumber, orderData, total) {
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${orderNumber}`;
+    // Link to order page instead of embedding QR
+    const orderPageUrl = `https://oliebollencostablanca.com/order.html?id=${orderNumber}`;
 
     let productsHtml = '';
     for (const [product, qty] of Object.entries(orderData.products)) {
@@ -348,12 +349,17 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
         </div>
         <div style="background:white;padding:30px;border-radius:0 0 12px 12px">
             <p style="font-size:16px">Hoi ${customer.naam.split(' ')[0]},</p>
-            <p>Je bestelling is ontvangen! Hieronder vind je de details en je QR-code.</p>
+            <p>Je bestelling is bevestigd! Klik op de knop hieronder om je QR-code te bekijken en alle informatie over het ophalen.</p>
 
-            <div style="text-align:center;margin:30px 0;padding:20px;background:#f8f9fa;border-radius:8px">
-                <img src="${qrCodeUrl}" alt="QR Code" width="180" height="180" style="border-radius:8px">
-                <p style="margin:15px 0 0 0;font-size:20px;font-weight:bold;color:#2c3e50">${orderNumber}</p>
-                <p style="margin:5px 0 0 0;font-size:12px;color:#666">Toon deze code bij ophalen</p>
+            <div style="text-align:center;margin:30px 0">
+                <a href="${orderPageUrl}" style="display:inline-block;background:#e67e22;color:white;padding:18px 40px;border-radius:8px;text-decoration:none;font-size:18px;font-weight:bold">
+                    Bekijk mijn bestelling
+                </a>
+            </div>
+
+            <div style="text-align:center;margin:20px 0;padding:15px;background:#f8f9fa;border-radius:8px">
+                <p style="margin:0;font-size:24px;font-weight:bold;color:#2c3e50">${orderNumber}</p>
+                <p style="margin:5px 0 0 0;font-size:12px;color:#666">Je bestelnummer</p>
             </div>
 
             <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0">
@@ -367,18 +373,21 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
                 </table>
             </div>
 
-            <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0">
-                <h3 style="margin:0 0 10px 0;color:#2c3e50">Ophalen</h3>
-                <p style="margin:0"><strong>Datum:</strong> 31 december 2025</p>
-                <p style="margin:5px 0 0 0"><strong>Tijd:</strong> ${orderData.timeslotLabel || orderData.timeslot}</p>
+            <div style="background:#e8f5e9;border:2px solid #27ae60;border-radius:8px;padding:20px;margin:20px 0;text-align:center">
+                <p style="margin:0;font-size:14px;color:#2e7d32;font-weight:bold">OPHALEN</p>
+                <p style="margin:8px 0 0 0;font-size:22px;font-weight:bold;color:#27ae60">31 december 2025</p>
+                <p style="margin:4px 0 0 0;font-size:20px;color:#2e7d32">${orderData.timeslotLabel || orderData.timeslot}</p>
             </div>
 
-            <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:20px;margin:20px 0;text-align:center">
-                <p style="margin:0;font-size:16px"><strong>Betaling:</strong> Contant bij ophalen</p>
-                <p style="margin:5px 0 0 0;color:#666">Graag gepast betalen!</p>
+            <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:15px;margin:20px 0;text-align:center">
+                <p style="margin:0;font-size:14px"><strong>Betaling:</strong> Contant bij ophalen - graag gepast!</p>
             </div>
 
-            <p style="text-align:center;color:#666;margin-top:30px">Tot 31 december!</p>
+            <p style="text-align:center;font-size:13px;color:#999;margin-top:30px">
+                Tip: Voeg de bestelpagina toe aan je startscherm voor snelle toegang op 31 december!
+            </p>
+
+            <p style="text-align:center;color:#666;margin-top:20px">Tot 31 december!</p>
         </div>
     </div>
 </body>
@@ -394,7 +403,7 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
             body: JSON.stringify({
                 from: 'Oliebollen Costa Blanca <bestelling@oliebollencostablanca.com>',
                 to: customer.email,
-                subject: `Bevestiging bestelling ${orderNumber}`,
+                subject: `Je oliebollen bestelling ${orderNumber}`,
                 html: emailHtml
             })
         });
