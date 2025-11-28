@@ -36,10 +36,13 @@ export async function onRequestGet(context) {
             `SELECT * FROM orders ORDER BY created_at DESC`
         ).all();
 
-        // Parse JSON products field
+        // Parse JSON fields
         const orders = results.map(order => ({
             ...order,
-            products: JSON.parse(order.products || '{}')
+            orderNumber: order.order_number,
+            customer: JSON.parse(order.customer_data || '{}'),
+            products: JSON.parse(order.products || '{}'),
+            timeslot: order.timeslot_id
         }));
 
         return Response.json(orders);
@@ -66,13 +69,11 @@ export async function onRequestPost(context) {
     // Save to database
     try {
         await env.DB.prepare(
-            `INSERT INTO orders (order_number, customer_name, customer_email, customer_phone, products, timeslot, timeslot_label, total, status, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            `INSERT INTO orders (order_number, customer_data, products, timeslot_id, timeslot_label, total, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
         ).bind(
             orderNumber,
-            data.customer.naam,
-            data.customer.email,
-            data.customer.telefoon || '',
+            JSON.stringify(data.customer),
             JSON.stringify(data.products),
             data.timeslot,
             data.timeslotLabel || data.timeslot,
