@@ -171,7 +171,7 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                from: 'Oliebollen Costa Blanca <onboarding@resend.dev>',
+                from: 'Oliebollen Costa Blanca <bestelling@oliebollencostablanca.com>',
                 to: customer.email,
                 subject: `🍩 Bevestiging bestelling ${orderNumber}`,
                 html: emailHtml
