@@ -46,10 +46,21 @@ function calculateTotalItems(products) {
     return total;
 }
 
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+    'https://oliebollencostablanca.com',
+    'https://www.oliebollencostablanca.com',
+    'http://localhost:8788',  // Local dev
+    'http://127.0.0.1:8788'
+];
+
 // CORS headers
-function corsHeaders() {
+function corsHeaders(request) {
+    const origin = request?.headers?.get('Origin') || '';
+    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+
     return {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': allowedOrigin,
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type'
     };
@@ -62,7 +73,7 @@ export default {
 
         // Handle CORS preflight
         if (request.method === 'OPTIONS') {
-            return new Response(null, { headers: corsHeaders() });
+            return new Response(null, { headers: corsHeaders(request) });
         }
 
         // API Routes
@@ -85,7 +96,7 @@ async function handleAPI(request, env, ctx, path) {
     try {
         // GET /api/orders
         if (path === '/api/orders' && request.method === 'GET') {
-            return await getOrders(env);
+            return await getOrders(request, env);
         }
 
         // POST /api/orders
@@ -96,24 +107,24 @@ async function handleAPI(request, env, ctx, path) {
         // GET /api/orders/:id
         const orderMatch = path.match(/^\/api\/orders\/([A-Z0-9-]+)$/i);
         if (orderMatch && request.method === 'GET') {
-            return await getOrder(env, orderMatch[1]);
+            return await getOrder(request, env, orderMatch[1]);
         }
 
         // POST /api/orders/:id/complete
         const completeMatch = path.match(/^\/api\/orders\/([A-Z0-9-]+)\/complete$/i);
         if (completeMatch && request.method === 'POST') {
-            return await completeOrder(env, completeMatch[1]);
+            return await completeOrder(request, env, completeMatch[1]);
         }
 
         // POST /api/orders/:id/noshow
         const noshowMatch = path.match(/^\/api\/orders\/([A-Z0-9-]+)\/noshow$/i);
         if (noshowMatch && request.method === 'POST') {
-            return await markNoshow(env, noshowMatch[1]);
+            return await markNoshow(request, env, noshowMatch[1]);
         }
 
         // GET /api/timeslots
         if (path === '/api/timeslots' && request.method === 'GET') {
-            return await getTimeslots(env);
+            return await getTimeslots(request, env);
         }
 
         // PUT /api/timeslots
@@ -126,10 +137,10 @@ async function handleAPI(request, env, ctx, path) {
             return await updateCapacity(request, env);
         }
 
-        return Response.json({ error: 'Not found' }, { status: 404, headers: corsHeaders() });
+        return Response.json({ error: 'Not found' }, { status: 404, headers: corsHeaders(request) });
     } catch (error) {
         console.error('API error:', error);
-        return Response.json({ error: error.message }, { status: 500, headers: corsHeaders() });
+        return Response.json({ error: error.message }, { status: 500, headers: corsHeaders(request) });
     }
 }
 
@@ -146,7 +157,7 @@ async function handleWebSocket(request, env, orderNumber) {
 // =====================
 // Orders API
 // =====================
-async function getOrders(env) {
+async function getOrders(request, env) {
     const { results } = await env.DB.prepare(
         `SELECT * FROM orders ORDER BY created_at DESC`
     ).all();
@@ -160,16 +171,16 @@ async function getOrders(env) {
         timeslotLabel: order.timeslot_label
     }));
 
-    return Response.json(orders, { headers: corsHeaders() });
+    return Response.json(orders, { headers: corsHeaders(request) });
 }
 
-async function getOrder(env, orderNumber) {
+async function getOrder(request, env, orderNumber) {
     const { results } = await env.DB.prepare(
         `SELECT * FROM orders WHERE order_number = ?`
     ).bind(orderNumber).all();
 
     if (results.length === 0) {
-        return Response.json({ error: 'Order not found' }, { status: 404, headers: corsHeaders() });
+        return Response.json({ error: 'Order not found' }, { status: 404, headers: corsHeaders(request) });
     }
 
     const order = results[0];
@@ -180,17 +191,43 @@ async function getOrder(env, orderNumber) {
         products: JSON.parse(order.products || '{}'),
         timeslot: order.timeslot_id,
         timeslotLabel: order.timeslot_label
-    }, { headers: corsHeaders() });
+    }, { headers: corsHeaders(request) });
 }
 
 async function createOrder(request, env, ctx) {
     const data = await request.json();
 
     if (!data.products || !data.customer || !data.timeslot) {
-        return Response.json({ error: 'Missing fields' }, { status: 400, headers: corsHeaders() });
+        return Response.json({ error: 'Missing fields' }, { status: 400, headers: corsHeaders(request) });
     }
 
-    const orderNumber = generateOrderNumber();
+    // Input validation
+    const customer = data.customer;
+    if (!customer.naam || customer.naam.length > 100) {
+        return Response.json({ error: 'Ongeldige naam' }, { status: 400, headers: corsHeaders(request) });
+    }
+    if (!customer.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) {
+        return Response.json({ error: 'Ongeldig email adres' }, { status: 400, headers: corsHeaders(request) });
+    }
+    if (customer.opmerkingen && customer.opmerkingen.length > 500) {
+        return Response.json({ error: 'Opmerkingen te lang (max 500 tekens)' }, { status: 400, headers: corsHeaders(request) });
+    }
+
+    // Generate order number with collision check
+    let orderNumber;
+    let attempts = 0;
+    while (attempts < 5) {
+        orderNumber = generateOrderNumber();
+        const existing = await env.DB.prepare(
+            `SELECT 1 FROM orders WHERE order_number = ?`
+        ).bind(orderNumber).first();
+        if (!existing) break;
+        attempts++;
+    }
+    if (attempts >= 5) {
+        return Response.json({ error: 'Kon geen bestelnummer genereren' }, { status: 500, headers: corsHeaders(request) });
+    }
+
     const total = data.total || calculateTotal(data.products);
     const totalItems = calculateTotalItems(data.products);
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${orderNumber}`;
@@ -202,7 +239,7 @@ async function createOrder(request, env, ctx) {
     ).bind(data.timeslot).all();
 
     if (results.length === 0) {
-        return Response.json({ error: 'Tijdslot niet gevonden' }, { status: 400, headers: corsHeaders() });
+        return Response.json({ error: 'Tijdslot niet gevonden' }, { status: 400, headers: corsHeaders(request) });
     }
 
     const slot = results[0];
@@ -214,7 +251,7 @@ async function createOrder(request, env, ctx) {
             message: `Er zijn nog maar ${available} stuks beschikbaar in dit tijdslot. Je bestelling is ${totalItems} stuks.`,
             available: available,
             requested: totalItems
-        }, { status: 400, headers: corsHeaders() });
+        }, { status: 400, headers: corsHeaders(request) });
     }
 
     // Save to database
@@ -242,10 +279,10 @@ async function createOrder(request, env, ctx) {
         ctx.waitUntil(sendConfirmationEmail(env, data.customer, orderNumber, data, total));
     }
 
-    return Response.json({ orderNumber, qrCode: qrCodeUrl, total }, { headers: corsHeaders() });
+    return Response.json({ orderNumber, qrCode: qrCodeUrl, total }, { headers: corsHeaders(request) });
 }
 
-async function completeOrder(env, orderNumber) {
+async function completeOrder(request, env, orderNumber) {
     // Update database
     await env.DB.prepare(
         `UPDATE orders SET status = 'completed', completed_at = ? WHERE order_number = ?`
@@ -260,21 +297,21 @@ async function completeOrder(env, orderNumber) {
         console.log('No active WebSocket sessions for order:', orderNumber);
     }
 
-    return Response.json({ success: true, orderNumber }, { headers: corsHeaders() });
+    return Response.json({ success: true, orderNumber }, { headers: corsHeaders(request) });
 }
 
-async function markNoshow(env, orderNumber) {
+async function markNoshow(request, env, orderNumber) {
     await env.DB.prepare(
         `UPDATE orders SET status = 'noshow' WHERE order_number = ?`
     ).bind(orderNumber).run();
 
-    return Response.json({ success: true, orderNumber }, { headers: corsHeaders() });
+    return Response.json({ success: true, orderNumber }, { headers: corsHeaders(request) });
 }
 
 // =====================
 // Timeslots API
 // =====================
-async function getTimeslots(env) {
+async function getTimeslots(request, env) {
     const { results } = await env.DB.prepare(
         `SELECT * FROM timeslots ORDER BY id`
     ).all();
@@ -289,21 +326,21 @@ async function getTimeslots(env) {
         available: slot.capacity - (slot.booked || 0)
     }));
 
-    return Response.json(slots, { headers: corsHeaders() });
+    return Response.json(slots, { headers: corsHeaders(request) });
 }
 
 async function updateTimeslot(request, env) {
     const data = await request.json();
 
     if (!data.id || data.capacity === undefined) {
-        return Response.json({ error: 'Missing id or capacity' }, { status: 400, headers: corsHeaders() });
+        return Response.json({ error: 'Missing id or capacity' }, { status: 400, headers: corsHeaders(request) });
     }
 
     await env.DB.prepare(
         `UPDATE timeslots SET capacity = ? WHERE id = ?`
     ).bind(data.capacity, data.id).run();
 
-    return Response.json({ success: true }, { headers: corsHeaders() });
+    return Response.json({ success: true }, { headers: corsHeaders(request) });
 }
 
 async function updateCapacity(request, env) {
@@ -315,7 +352,7 @@ async function updateCapacity(request, env) {
         ).bind(update.capacity, update.id).run();
     }
 
-    return Response.json({ success: true }, { headers: corsHeaders() });
+    return Response.json({ success: true }, { headers: corsHeaders(request) });
 }
 
 // =====================

@@ -90,14 +90,19 @@ function showWelcomeBack(naam) {
     const firstName = naam ? naam.split(' ')[0] : '';
     const hero = document.querySelector('.hero');
     if (hero && firstName) {
-        // Add welcome back banner
+        // Add welcome back banner (use textContent to prevent XSS)
         const banner = document.createElement('div');
         banner.className = 'welcome-back-banner';
-        banner.innerHTML = `
-            <div class="container">
-                <p>Welkom terug, <strong>${firstName}</strong>! Fijn dat je weer bestelt.</p>
-            </div>
-        `;
+        const container = document.createElement('div');
+        container.className = 'container';
+        const p = document.createElement('p');
+        p.appendChild(document.createTextNode('Welkom terug, '));
+        const strong = document.createElement('strong');
+        strong.textContent = firstName;
+        p.appendChild(strong);
+        p.appendChild(document.createTextNode('! Fijn dat je weer bestelt.'));
+        container.appendChild(p);
+        banner.appendChild(container);
         hero.insertAdjacentElement('afterend', banner);
     }
 }

@@ -23,6 +23,13 @@ const PRODUCT_NAMES = {
     appelbeignet: 'Appelbeignets'
 };
 
+// HTML escape helper to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
@@ -359,13 +366,13 @@ function showAutocompleteResults(query) {
         const total = order.total || calculateOrderTotal(order);
 
         return `
-            <div class="autocomplete-item" data-order-number="${order.orderNumber}">
+            <div class="autocomplete-item" data-order-number="${escapeHtml(order.orderNumber)}">
                 <div class="autocomplete-item-main">
-                    <span class="autocomplete-order-number">${highlightMatch(order.orderNumber, query)}</span>
-                    <span class="autocomplete-customer">${highlightMatch(order.customer?.naam || '', query)}</span>
+                    <span class="autocomplete-order-number">${highlightMatch(escapeHtml(order.orderNumber), query)}</span>
+                    <span class="autocomplete-customer">${highlightMatch(escapeHtml(order.customer?.naam || ''), query)}</span>
                 </div>
                 <div class="autocomplete-item-details">
-                    <span class="autocomplete-timeslot">${order.timeslotLabel || order.timeslot}</span>
+                    <span class="autocomplete-timeslot">${escapeHtml(order.timeslotLabel || order.timeslot)}</span>
                     <span class="autocomplete-total">${formatPrice(total)}</span>
                     <span class="autocomplete-status ${statusClass}">${statusLabel}</span>
                 </div>
@@ -515,20 +522,20 @@ function renderOrders() {
     }
 
     container.innerHTML = filteredOrders.map(order => `
-        <div class="order-card" data-order="${order.orderNumber}">
+        <div class="order-card" data-order="${escapeHtml(order.orderNumber)}">
             <div class="order-card-header">
-                <span class="order-number">${order.orderNumber}</span>
+                <span class="order-number">${escapeHtml(order.orderNumber)}</span>
                 <span class="order-status ${order.status || 'pending'}">${getStatusLabel(order.status)}</span>
             </div>
             <div class="order-card-body">
-                <div class="order-customer">${order.customer.naam}</div>
-                <div class="order-timeslot">${order.timeslotLabel || order.timeslot}</div>
-                <div class="order-items">${formatOrderItems(order.products)}</div>
+                <div class="order-customer">${escapeHtml(order.customer.naam)}</div>
+                <div class="order-timeslot">${escapeHtml(order.timeslotLabel || order.timeslot)}</div>
+                <div class="order-items">${escapeHtml(formatOrderItems(order.products))}</div>
                 <div class="order-total">${formatPrice(order.total || calculateOrderTotal(order))}</div>
                 <div class="order-actions">
                     ${order.status !== 'completed' ? `
-                        <button class="btn btn-success btn-complete" data-order="${order.orderNumber}">Afhandelen</button>
-                        <button class="btn btn-danger btn-noshow" data-order="${order.orderNumber}">No-show</button>
+                        <button class="btn btn-success btn-complete" data-order="${escapeHtml(order.orderNumber)}">Afhandelen</button>
+                        <button class="btn btn-danger btn-noshow" data-order="${escapeHtml(order.orderNumber)}">No-show</button>
                     ` : `
                         <span class="completed-label">Opgehaald</span>
                     `}
@@ -1064,16 +1071,16 @@ async function handleCsvImport(event) {
         resultsContainer.style.display = 'block';
 
         resultsDiv.innerHTML = results.map(r =>
-            `<div class="import-result-item ${r.success ? 'success' : 'error'}">${r.message}</div>`
+            `<div class="import-result-item ${r.success ? 'success' : 'error'}">${escapeHtml(r.message)}</div>`
         ).join('');
 
-        summaryDiv.innerHTML = `${successCount} geïmporteerd, ${errorCount} mislukt`;
+        summaryDiv.textContent = `${successCount} geïmporteerd, ${errorCount} mislukt`;
 
     } catch (error) {
         progressDiv.style.display = 'none';
         resultsContainer.style.display = 'block';
-        resultsDiv.innerHTML = `<div class="import-result-item error">${error.message}</div>`;
-        summaryDiv.innerHTML = 'Import mislukt';
+        resultsDiv.innerHTML = `<div class="import-result-item error">${escapeHtml(error.message)}</div>`;
+        summaryDiv.textContent = 'Import mislukt';
     }
 }
 
