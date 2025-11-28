@@ -438,7 +438,7 @@ async function submitOrder() {
                     loadTimeslots();
                     goToStep(2);
                     submitBtn.disabled = false;
-                    submitBtn.textContent = '✓ Bestelling plaatsen';
+                    submitBtn.textContent = 'Bestelling plaatsen';
                     return;
                 }
                 throw new Error(errorData.error || 'Bestelling mislukt');
@@ -468,7 +468,7 @@ async function submitOrder() {
         console.error('Error submitting order:', error);
         alert(error.message || 'Er ging iets mis. Probeer het opnieuw.');
         submitBtn.disabled = false;
-        submitBtn.textContent = '✓ Bestelling plaatsen';
+        submitBtn.textContent = 'Bestelling plaatsen';
     }
 }
 
@@ -579,7 +579,7 @@ function setupConfirmationButtons(result) {
 
 function setupShareButtons() {
     const websiteUrl = window.location.origin;
-    const shareMessage = `Ik heb net oliebollen besteld bij Oliebollen Costa Blanca voor Oudjaar! 🍩🎉 Bestel ook via ${websiteUrl}`;
+    const shareMessage = `Ik heb net oliebollen besteld bij Oliebollen Costa Blanca voor Oudjaar! Bestel ook via ${websiteUrl}`;
 
     // WhatsApp share
     const whatsappBtn = document.getElementById('shareWhatsapp');

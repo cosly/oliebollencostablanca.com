@@ -157,7 +157,7 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
 <body style="font-family:Arial,sans-serif;margin:0;padding:0;background:#f5f5f5">
     <div style="max-width:500px;margin:0 auto;padding:20px">
         <div style="background:#e67e22;color:white;padding:30px;text-align:center;border-radius:12px 12px 0 0">
-            <h1 style="margin:0;font-size:24px">🍩 Oliebollen Costa Blanca</h1>
+            <h1 style="margin:0;font-size:24px">Oliebollen Costa Blanca</h1>
             <p style="margin:10px 0 0 0;opacity:0.9">Bedankt voor je bestelling!</p>
         </div>
         <div style="background:white;padding:30px;border-radius:0 0 12px 12px">
@@ -171,7 +171,7 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
             </div>
 
             <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0">
-                <h3 style="margin:0 0 15px 0;color:#2c3e50">📦 Je bestelling</h3>
+                <h3 style="margin:0 0 15px 0;color:#2c3e50">Je bestelling</h3>
                 <table style="width:100%;border-collapse:collapse">
                     ${productsHtml}
                     <tr style="font-weight:bold;font-size:18px">
@@ -182,17 +182,17 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
             </div>
 
             <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0">
-                <h3 style="margin:0 0 10px 0;color:#2c3e50">🕐 Ophalen</h3>
+                <h3 style="margin:0 0 10px 0;color:#2c3e50">Ophalen</h3>
                 <p style="margin:0"><strong>Datum:</strong> 31 december 2025</p>
                 <p style="margin:5px 0 0 0"><strong>Tijd:</strong> ${orderData.timeslotLabel || orderData.timeslot}</p>
             </div>
 
             <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:20px;margin:20px 0;text-align:center">
-                <p style="margin:0;font-size:16px">💶 <strong>Betaling:</strong> Contant bij ophalen</p>
+                <p style="margin:0;font-size:16px"><strong>Betaling:</strong> Contant bij ophalen</p>
                 <p style="margin:5px 0 0 0;color:#666">Graag gepast betalen!</p>
             </div>
 
-            <p style="text-align:center;color:#666;margin-top:30px">Tot 31 december! 🎉</p>
+            <p style="text-align:center;color:#666;margin-top:30px">Tot 31 december!</p>
         </div>
     </div>
 </body>
@@ -208,7 +208,7 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
             body: JSON.stringify({
                 from: 'Oliebollen Costa Blanca <bestelling@oliebollencostablanca.com>',
                 to: customer.email,
-                subject: `🍩 Bevestiging bestelling ${orderNumber}`,
+                subject: `Bevestiging bestelling ${orderNumber}`,
                 html: emailHtml
             })
         });

@@ -13,15 +13,15 @@
 </head>
 <body class="admin-body">
     <header class="admin-header">
-        <h1>🍩 Admin Panel</h1>
+        <h1>Admin Panel</h1>
         <span id="connectionStatus" class="connection-status">●</span>
     </header>
 
     <nav class="admin-nav">
-        <button class="active" data-tab="scanner">📷 Scanner</button>
-        <button data-tab="orders">📋 Bestellingen</button>
-        <button data-tab="capacity">⚙️ Capaciteit</button>
-        <button data-tab="totals">📊 Totalen</button>
+        <button class="active" data-tab="scanner">Scanner</button>
+        <button data-tab="orders">Bestellingen</button>
+        <button data-tab="capacity">Capaciteit</button>
+        <button data-tab="totals">Totalen</button>
     </nav>
 
     <main class="admin-content">
@@ -30,7 +30,7 @@
             <div class="scanner-container">
                 <div id="qr-reader"></div>
                 <div class="scanner-overlay">
-                    <button id="startScanBtn" class="btn btn-primary">📷 Start Scanner</button>
+                    <button id="startScanBtn" class="btn btn-primary">Start Scanner</button>
                 </div>
             </div>
 
@@ -53,7 +53,7 @@
 
                         <!-- Wisselgeld Calculator -->
                         <div class="calculator">
-                            <h3>💶 Wisselgeld Calculator</h3>
+                            <h3>Wisselgeld Calculator</h3>
                             <div class="calc-row">
                                 <span class="calc-label">Te betalen:</span>
                                 <span class="calc-value total" id="calcTotal">€ 0,00</span>
@@ -76,8 +76,8 @@
                         </div>
 
                         <div class="order-actions">
-                            <button class="btn btn-success" id="completeOrderBtn">✓ Afgehandeld</button>
-                            <button class="btn btn-secondary" id="cancelScanBtn">✕ Annuleren</button>
+                            <button class="btn btn-success" id="completeOrderBtn">Afgehandeld</button>
+                            <button class="btn btn-secondary" id="cancelScanBtn">Annuleren</button>
                         </div>
                     </div>
                 </div>
@@ -146,14 +146,14 @@
             </div>
 
             <div class="capacity-save">
-                <button id="saveCapacity" class="btn btn-success">💾 Opslaan</button>
+                <button id="saveCapacity" class="btn btn-success">Opslaan</button>
             </div>
         </section>
 
         <!-- Totals Tab -->
         <section id="tab-totals" class="admin-tab">
             <div class="totals-header">
-                <h2>📊 Totaaloverzicht</h2>
+                <h2>Totaaloverzicht</h2>
                 <p>Voor inkoop en planning</p>
             </div>
 
@@ -200,9 +200,9 @@
             </div>
 
             <div class="export-actions">
-                <button id="exportPdf" class="btn btn-secondary">📄 Export PDF</button>
-                <button id="exportCsv" class="btn btn-secondary">📊 Export Excel</button>
-                <button id="printList" class="btn btn-secondary">🖨️ Print lijst</button>
+                <button id="exportPdf" class="btn btn-secondary">Export PDF</button>
+                <button id="exportCsv" class="btn btn-secondary">Export Excel</button>
+                <button id="printList" class="btn btn-secondary">Print lijst</button>
             </div>
         </section>
     </main>
@@ -210,7 +210,7 @@
     <!-- No-show Alert Modal -->
     <div id="noshowModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <h3>⚠️ No-show melden</h3>
+            <h3>No-show melden</h3>
             <p>Wil je deze klant als no-show markeren?</p>
             <p class="modal-customer" id="noshowCustomer">-</p>
             <div class="modal-actions">
@@ -219,7 +219,7 @@
             </div>
             <div class="whatsapp-action">
                 <a href="#" id="whatsappLink" class="btn btn-success">
-                    📱 Stuur WhatsApp bericht
+                    Stuur WhatsApp bericht
                 </a>
             </div>
         </div>
@@ -228,20 +228,17 @@
     <!-- Review Request Modal -->
     <div id="reviewModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <div style="text-align: center; margin-bottom: 16px;">
-                <span style="font-size: 3rem;">🎉</span>
-            </div>
             <h3 style="text-align: center;">Bestelling afgehandeld!</h3>
             <p style="text-align: center; color: #666;">Vraag de klant om een Google review te plaatsen</p>
             <p class="modal-customer" id="reviewCustomer">-</p>
             <div class="modal-actions" style="flex-direction: column;">
                 <a href="#" id="reviewWhatsappLink" class="btn btn-success" target="_blank">
-                    📱 Stuur review verzoek via WhatsApp
+                    Stuur review verzoek via WhatsApp
                 </a>
                 <button class="btn btn-secondary" id="closeReviewModal">Sluiten</button>
             </div>
             <p style="text-align: center; font-size: 0.8rem; color: #999; margin-top: 12px;">
-                Tip: Reviews helpen ons enorm! ⭐⭐⭐⭐⭐
+                Tip: Reviews helpen ons enorm!
             </p>
         </div>
     </div>

@@ -164,7 +164,7 @@ function displayScannedOrder(order) {
 
     document.getElementById('scanOrderNumber').textContent = order.orderNumber;
     document.getElementById('scanCustomer').textContent = order.customer.naam;
-    document.getElementById('scanTimeslot').textContent = '🕐 ' + (order.timeslotLabel || order.timeslot);
+    document.getElementById('scanTimeslot').textContent = order.timeslotLabel || order.timeslot;
 
     // Check timeslot status
     const timeslotStatus = getTimeslotStatus(order);
@@ -253,12 +253,12 @@ function showReviewModal(order) {
     // Create WhatsApp message with review link
     const phone = (order.customer?.telefoon || '').replace(/[^0-9+]/g, '');
     const reviewMessage = encodeURIComponent(
-        `Hoi ${firstName}! 🍩\n\n` +
+        `Hoi ${firstName}!\n\n` +
         `Bedankt voor je bestelling bij Oliebollen Costa Blanca!\n\n` +
         `We hopen dat je hebt genoten van onze oliebollen. ` +
-        `Zou je ons willen helpen door een Google review te plaatsen? ⭐\n\n` +
+        `Zou je ons willen helpen door een Google review te plaatsen?\n\n` +
         `${GOOGLE_REVIEW_URL}\n\n` +
-        `Alvast bedankt en een gelukkig nieuwjaar! 🎉`
+        `Alvast bedankt en een gelukkig nieuwjaar!`
     );
 
     const whatsappLink = document.getElementById('reviewWhatsappLink');
@@ -402,15 +402,15 @@ function renderOrders() {
             </div>
             <div class="order-card-body">
                 <div class="order-customer">${order.customer.naam}</div>
-                <div class="order-timeslot">🕐 ${order.timeslotLabel || order.timeslot}</div>
+                <div class="order-timeslot">${order.timeslotLabel || order.timeslot}</div>
                 <div class="order-items">${formatOrderItems(order.products)}</div>
                 <div class="order-total">${formatPrice(order.total || calculateOrderTotal(order))}</div>
                 <div class="order-actions">
                     ${order.status !== 'completed' ? `
-                        <button class="btn btn-success btn-complete" data-order="${order.orderNumber}">✓ Afhandelen</button>
-                        <button class="btn btn-danger btn-noshow" data-order="${order.orderNumber}">⚠️ No-show</button>
+                        <button class="btn btn-success btn-complete" data-order="${order.orderNumber}">Afhandelen</button>
+                        <button class="btn btn-danger btn-noshow" data-order="${order.orderNumber}">No-show</button>
                     ` : `
-                        <span class="completed-label">✓ Opgehaald</span>
+                        <span class="completed-label">Opgehaald</span>
                     `}
                 </div>
             </div>
@@ -495,7 +495,7 @@ function showNoshowModal(orderNumber) {
     // WhatsApp link
     const phone = order.customer.telefoon.replace(/[^0-9+]/g, '');
     const message = encodeURIComponent(
-        `Hoi ${order.customer.naam.split(' ')[0]}! Je oliebollen bestelling (${order.orderNumber}) staat nog op je te wachten. Laat even weten wanneer je langs komt! 🍩`
+        `Hoi ${order.customer.naam.split(' ')[0]}! Je oliebollen bestelling (${order.orderNumber}) staat nog op je te wachten. Laat even weten wanneer je langs komt!`
     );
     document.getElementById('whatsappLink').href = `https://wa.me/${phone}?text=${message}`;
 
@@ -632,7 +632,7 @@ async function saveCapacity() {
     // Save locally
     localStorage.setItem('timeslots', JSON.stringify(timeslots));
 
-    alert('✓ Capaciteit opgeslagen!');
+    alert('Capaciteit opgeslagen!');
     renderCapacityList();
 }
 
@@ -703,9 +703,9 @@ function renderTimeslotTotals() {
                 <span>${data.orders} bestellingen</span>
             </div>
             <div class="timeslot-total-products">
-                ${data.products.oliebol_krenten > 0 ? `<span>🟤 ${data.products.oliebol_krenten}x krenten</span>` : ''}
-                ${data.products.oliebol_naturel > 0 ? `<span>⚪ ${data.products.oliebol_naturel}x naturel</span>` : ''}
-                ${data.products.appelbeignet > 0 ? `<span>🍎 ${data.products.appelbeignet}x appel</span>` : ''}
+                ${data.products.oliebol_krenten > 0 ? `<span>${data.products.oliebol_krenten}x krenten</span>` : ''}
+                ${data.products.oliebol_naturel > 0 ? `<span>${data.products.oliebol_naturel}x naturel</span>` : ''}
+                ${data.products.appelbeignet > 0 ? `<span>${data.products.appelbeignet}x appel</span>` : ''}
             </div>
         </div>
     `).join('');
@@ -786,7 +786,7 @@ function checkTimeAgainstSlot(startTime, endTime) {
         return {
             status: 'early',
             message: `Te vroeg! Nog ${timeText} tot tijdslot`,
-            icon: '⏰',
+            icon: '',
             severity: minutesUntilStart > 60 ? 'severe' : 'warning'
         };
     } else if (minutesUntilEnd < -LATE_THRESHOLD) {
@@ -803,7 +803,7 @@ function checkTimeAgainstSlot(startTime, endTime) {
         return {
             status: 'late',
             message: `Te laat! Tijdslot is ${timeText} geleden geëindigd`,
-            icon: '⚠️',
+            icon: '',
             severity: minutesLate > 60 ? 'severe' : 'warning'
         };
     } else if (minutesUntilStart > 0 && minutesUntilStart <= EARLY_THRESHOLD) {
@@ -811,7 +811,7 @@ function checkTimeAgainstSlot(startTime, endTime) {
         return {
             status: 'almost',
             message: `Bijna tijd! Nog ${minutesUntilStart} minuten`,
-            icon: '🕐',
+            icon: '',
             severity: 'info'
         };
     } else if (minutesUntilEnd < 0 && minutesUntilEnd >= -LATE_THRESHOLD) {
@@ -819,15 +819,15 @@ function checkTimeAgainstSlot(startTime, endTime) {
         return {
             status: 'justended',
             message: `Net afgelopen (${Math.abs(minutesUntilEnd)} min geleden)`,
-            icon: '✓',
+            icon: '',
             severity: 'info'
         };
     } else {
         // On time (during the timeslot)
         return {
             status: 'ontime',
-            message: 'Op tijd! ✓',
-            icon: '✅',
+            message: 'Op tijd!',
+            icon: '',
             severity: 'success'
         };
     }
