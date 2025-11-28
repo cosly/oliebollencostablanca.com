@@ -43,7 +43,64 @@ document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     loadTimeslots();
     initFormValidation();
+    checkPrefillParams();
 });
+
+// =====================
+// Pre-fill from URL (for returning customers)
+// =====================
+function checkPrefillParams() {
+    const params = new URLSearchParams(window.location.search);
+
+    // Check for prefill data
+    const naam = params.get('naam');
+    const email = params.get('email');
+    const telefoon = params.get('telefoon');
+
+    if (naam || email || telefoon) {
+        // Pre-fill customer data
+        if (naam) {
+            const naamInput = document.getElementById('naam');
+            if (naamInput) {
+                naamInput.value = naam;
+                orderData.customer.naam = naam;
+            }
+        }
+        if (email) {
+            const emailInput = document.getElementById('email');
+            if (emailInput) {
+                emailInput.value = email;
+                orderData.customer.email = email;
+            }
+        }
+        if (telefoon) {
+            const telefoonInput = document.getElementById('telefoon');
+            if (telefoonInput) {
+                telefoonInput.value = telefoon;
+                orderData.customer.telefoon = telefoon;
+            }
+        }
+
+        // Show welcome back message
+        showWelcomeBack(naam);
+    }
+}
+
+function showWelcomeBack(naam) {
+    const firstName = naam ? naam.split(' ')[0] : '';
+    const hero = document.querySelector('.hero');
+    if (hero && firstName) {
+        // Add welcome back banner
+        const banner = document.createElement('div');
+        banner.className = 'welcome-back-banner';
+        banner.innerHTML = `
+            <div class="container">
+                <p>Welkom terug, <strong>${firstName}</strong>! Fijn dat je weer bestelt.</p>
+            </div>
+        `;
+        hero.insertAdjacentElement('afterend', banner);
+    }
+}
 
 // =====================
 // Quantity Controls
