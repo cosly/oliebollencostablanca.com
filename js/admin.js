@@ -5,6 +5,10 @@
 
 const API_BASE = '/api';
 
+// Google Review URL - vervang PLACE_ID met je Google Business Place ID
+// Vind je Place ID via: https://developers.google.com/maps/documentation/places/web-service/place-id
+const GOOGLE_REVIEW_URL = 'https://search.google.com/local/writereview?placeid=PLACE_ID_HERE';
+
 // State
 let currentOrder = null;
 let orders = [];
@@ -231,9 +235,47 @@ async function completeOrder() {
         navigator.vibrate(200);
     }
 
-    alert('✓ Bestelling afgehandeld!');
+    // Show review modal instead of alert
+    showReviewModal(currentOrder);
+
     cancelScan();
     loadOrders();
+}
+
+function showReviewModal(order) {
+    const modal = document.getElementById('reviewModal');
+    const customerName = order.customer?.naam || 'Klant';
+    const firstName = customerName.split(' ')[0];
+
+    // Show customer name
+    document.getElementById('reviewCustomer').textContent = customerName;
+
+    // Create WhatsApp message with review link
+    const phone = (order.customer?.telefoon || '').replace(/[^0-9+]/g, '');
+    const reviewMessage = encodeURIComponent(
+        `Hoi ${firstName}! 🍩\n\n` +
+        `Bedankt voor je bestelling bij Oliebollen Costa Blanca!\n\n` +
+        `We hopen dat je hebt genoten van onze oliebollen. ` +
+        `Zou je ons willen helpen door een Google review te plaatsen? ⭐\n\n` +
+        `${GOOGLE_REVIEW_URL}\n\n` +
+        `Alvast bedankt en een gelukkig nieuwjaar! 🎉`
+    );
+
+    const whatsappLink = document.getElementById('reviewWhatsappLink');
+    if (phone) {
+        whatsappLink.href = `https://wa.me/${phone}?text=${reviewMessage}`;
+        whatsappLink.style.display = 'flex';
+    } else {
+        whatsappLink.style.display = 'none';
+    }
+
+    // Close button handler
+    document.getElementById('closeReviewModal').onclick = () => {
+        modal.style.display = 'none';
+    };
+
+    // Show modal
+    modal.style.display = 'flex';
 }
 
 function manualLookup() {

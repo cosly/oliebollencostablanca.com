@@ -190,6 +190,33 @@
             font-size: 4rem;
             margin-bottom: 16px;
         }
+        /* Review Prompt */
+        .review-prompt {
+            background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+            border: 2px solid #f1c40f;
+            border-radius: var(--radius);
+            padding: 24px;
+            text-align: center;
+            margin-top: 16px;
+        }
+        .review-prompt-icon {
+            font-size: 3rem;
+            margin-bottom: 8px;
+        }
+        .review-prompt h3 {
+            color: #856404;
+            margin-bottom: 8px;
+        }
+        .review-prompt p {
+            color: #856404;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+        .btn-review {
+            background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+            color: #000;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body class="order-page">
@@ -271,10 +298,22 @@
                 <h4>💡 Tip: Voeg toe aan startscherm</h4>
                 <p id="addToHomeInstructions"></p>
             </div>
+
+            <!-- Review Prompt (shown for completed orders) -->
+            <div class="review-prompt" id="reviewPrompt" style="display: none;">
+                <div class="review-prompt-icon">⭐</div>
+                <h3>Hoe waren je oliebollen?</h3>
+                <p>We hopen dat je hebt genoten! Help ons door een review te plaatsen.</p>
+                <a href="#" id="googleReviewLink" class="btn btn-review" target="_blank">
+                    ⭐ Plaats Google Review
+                </a>
+            </div>
         </div>
     </div>
 
     <script>
+        // Google Review URL - same as admin
+        const GOOGLE_REVIEW_URL = 'https://search.google.com/local/writereview?placeid=PLACE_ID_HERE';
         // Product names
         const PRODUCT_NAMES = {
             oliebol_krenten: 'Oliebollen met krenten',
@@ -416,6 +455,14 @@
             // Share button (if supported)
             if (navigator.share) {
                 document.getElementById('shareBtn').style.display = 'flex';
+            }
+
+            // Show review prompt for completed orders
+            if (order.status === 'completed') {
+                document.getElementById('reviewPrompt').style.display = 'block';
+                document.getElementById('googleReviewLink').href = GOOGLE_REVIEW_URL;
+                // Hide add-to-home tip for completed orders
+                document.getElementById('addToHomeTip').style.display = 'none';
             }
 
             // Save to localStorage

@@ -561,6 +561,54 @@ h1, h2, h3 {
     background: #1a252f;
 }
 
+/* Social Share Buttons */
+.social-share {
+    margin: 24px 0;
+    text-align: center;
+}
+
+.social-share p {
+    color: var(--gray-500);
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+}
+
+.share-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.share-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.share-btn:active {
+    transform: scale(0.95);
+}
+
+.share-btn.whatsapp {
+    background: #25D366;
+    color: white;
+}
+
+.share-btn.facebook {
+    background: #1877F2;
+    color: white;
+}
+
+.share-icon {
+    font-size: 1.1rem;
+}
+
 /* Info Section */
 .info-section {
     margin: 32px 0;

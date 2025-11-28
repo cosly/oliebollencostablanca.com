@@ -572,6 +572,28 @@ function setupConfirmationButtons(result) {
     if (downloadBtn) {
         downloadBtn.addEventListener('click', () => generateAndDownloadTicket(result));
     }
+
+    // Setup social share buttons
+    setupShareButtons();
+}
+
+function setupShareButtons() {
+    const websiteUrl = window.location.origin;
+    const shareMessage = `Ik heb net oliebollen besteld bij Oliebollen Costa Blanca voor Oudjaar! 🍩🎉 Bestel ook via ${websiteUrl}`;
+
+    // WhatsApp share
+    const whatsappBtn = document.getElementById('shareWhatsapp');
+    if (whatsappBtn) {
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
+        whatsappBtn.href = whatsappUrl;
+    }
+
+    // Facebook share
+    const facebookBtn = document.getElementById('shareFacebook');
+    if (facebookBtn) {
+        const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(websiteUrl)}&quote=${encodeURIComponent(shareMessage)}`;
+        facebookBtn.href = facebookUrl;
+    }
 }
 
 async function generateAndDownloadTicket(result) {
