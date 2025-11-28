@@ -1,10 +1,12 @@
 # Cloudflare Workers configuration
 name = "oliebollencostablanca"
-main = "worker.js"
+main = "src/worker.js"
 compatibility_date = "2024-01-01"
 
 # Static assets (HTML, CSS, JS)
-assets = { directory = "./public" }
+[assets]
+directory = "./"
+binding = "ASSETS"
 
 # Environment variables
 [vars]
@@ -15,3 +17,14 @@ ENVIRONMENT = "production"
 binding = "DB"
 database_name = "oliebollen-db"
 database_id = "4a8bb02f-c23d-42d1-a156-01bf81970717"
+
+# Durable Objects
+[durable_objects]
+bindings = [
+    { name = "ORDER_SESSIONS", class_name = "OrderSession" }
+]
+
+# Migrations for Durable Objects
+[[migrations]]
+tag = "v1"
+new_classes = ["OrderSession"]

@@ -217,9 +217,161 @@
             color: #000;
             font-weight: 600;
         }
+        /* Real-time connection indicator */
+        .connection-indicator {
+            position: fixed;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.95);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            box-shadow: var(--shadow);
+            z-index: 100;
+        }
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--gray-400);
+        }
+        .connection-dot.connected {
+            background: var(--success);
+            animation: pulse-dot 2s infinite;
+        }
+        .connection-dot.connecting {
+            background: var(--warning);
+            animation: pulse-dot 0.5s infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        /* Success Overlay */
+        .success-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 50%, #27ae60 100%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        .success-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .success-content {
+            text-align: center;
+            color: white;
+            padding: 40px 20px;
+            max-width: 400px;
+        }
+        .success-checkmark {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .success-checkmark svg {
+            width: 70px;
+            height: 70px;
+            stroke: white;
+            stroke-width: 3;
+            fill: none;
+        }
+        .checkmark-path {
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+            animation: draw-check 0.6s ease forwards 0.3s;
+        }
+        @keyframes draw-check {
+            to { stroke-dashoffset: 0; }
+        }
+        @keyframes pop-in {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .success-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            animation: fade-up 0.5s ease forwards 0.4s;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .success-subtitle {
+            font-size: 1.3rem;
+            opacity: 0;
+            animation: fade-up 0.5s ease forwards 0.6s;
+            margin-bottom: 24px;
+        }
+        .success-message {
+            font-size: 1rem;
+            opacity: 0;
+            animation: fade-up 0.5s ease forwards 0.8s;
+            line-height: 1.6;
+        }
+        @keyframes fade-up {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Confetti */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            top: -20px;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            background: #f1c40f;
+            animation: confetti-fall 3s linear forwards;
+        }
+        @keyframes confetti-fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
     </style>
 </head>
 <body class="order-page">
+    <!-- Connection Indicator -->
+    <div class="connection-indicator" id="connectionIndicator" style="display: none;">
+        <span class="connection-dot" id="connectionDot"></span>
+        <span id="connectionText">Verbinden...</span>
+    </div>
+
+    <!-- Success Overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-content">
+            <div class="success-checkmark">
+                <svg viewBox="0 0 52 52">
+                    <circle cx="26" cy="26" r="25" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+                    <path class="checkmark-path" d="M14 27l7 7 16-16"/>
+                </svg>
+            </div>
+            <h1 class="success-title">Afgehandeld!</h1>
+            <p class="success-subtitle">Fijne jaarwisseling!</p>
+            <p class="success-message">
+                Bedankt voor je bestelling bij Oliebollen Costa Blanca.<br>
+                Geniet van je oliebollen en tot volgend jaar!
+            </p>
+        </div>
+    </div>
+
     <!-- Loading State -->
     <div id="loadingState" class="loading-state">
         <div class="spinner"></div>
@@ -325,6 +477,150 @@
         const urlParams = new URLSearchParams(window.location.search);
         const orderNumber = urlParams.get('id') || urlParams.get('order');
 
+        // WebSocket connection
+        let ws = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 10;
+        let currentOrder = null;
+
+        // Connect to WebSocket for real-time updates
+        function connectWebSocket() {
+            if (!orderNumber) return;
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/order/${orderNumber}`;
+
+            try {
+                ws = new WebSocket(wsUrl);
+
+                ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    reconnectAttempts = 0;
+                    updateConnectionStatus('connected');
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleWebSocketMessage(data);
+                    } catch (e) {
+                        console.error('Invalid WebSocket message', e);
+                    }
+                };
+
+                ws.onclose = () => {
+                    console.log('WebSocket disconnected');
+                    updateConnectionStatus('disconnected');
+                    // Try to reconnect
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                        setTimeout(connectWebSocket, delay);
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    updateConnectionStatus('error');
+                };
+
+            } catch (e) {
+                console.error('Failed to create WebSocket:', e);
+            }
+        }
+
+        function handleWebSocketMessage(data) {
+            console.log('WebSocket message:', data);
+
+            if (data.type === 'connected') {
+                console.log('Session established:', data.sessionId);
+            }
+
+            if (data.type === 'completed') {
+                // Order has been completed by admin!
+                showSuccessAnimation();
+            }
+
+            if (data.type === 'pong') {
+                // Keep-alive response
+            }
+        }
+
+        function updateConnectionStatus(status) {
+            const indicator = document.getElementById('connectionIndicator');
+            const dot = document.getElementById('connectionDot');
+            const text = document.getElementById('connectionText');
+
+            // Only show indicator for pending orders
+            if (currentOrder && currentOrder.status === 'pending') {
+                indicator.style.display = 'flex';
+            }
+
+            dot.className = 'connection-dot';
+
+            switch (status) {
+                case 'connected':
+                    dot.classList.add('connected');
+                    text.textContent = 'Live';
+                    break;
+                case 'connecting':
+                    dot.classList.add('connecting');
+                    text.textContent = 'Verbinden...';
+                    break;
+                case 'disconnected':
+                case 'error':
+                    text.textContent = 'Offline';
+                    break;
+            }
+        }
+
+        // Send keep-alive pings
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000);
+
+        // Show success animation with confetti
+        function showSuccessAnimation() {
+            // Vibrate if supported
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200, 100, 400]);
+            }
+
+            // Show overlay
+            const overlay = document.getElementById('successOverlay');
+            overlay.classList.add('show');
+
+            // Create confetti
+            createConfetti();
+
+            // Hide connection indicator
+            document.getElementById('connectionIndicator').style.display = 'none';
+        }
+
+        function createConfetti() {
+            const overlay = document.getElementById('successOverlay');
+            const colors = ['#f1c40f', '#e67e22', '#e74c3c', '#9b59b6', '#3498db', '#2ecc71', '#fff'];
+
+            for (let i = 0; i < 100; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti-piece';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.width = (Math.random() * 10 + 5) + 'px';
+                    confetti.style.height = (Math.random() * 15 + 10) + 'px';
+                    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    confetti.style.animationDelay = (Math.random() * 0.5) + 's';
+                    overlay.appendChild(confetti);
+
+                    // Remove after animation
+                    setTimeout(() => confetti.remove(), 4000);
+                }, i * 30);
+            }
+        }
+
         // Detect device for add-to-home instructions
         function getAddToHomeInstructions() {
             const ua = navigator.userAgent;
@@ -412,6 +708,8 @@
         }
 
         function displayOrder(order) {
+            currentOrder = order;
+
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('orderContent').style.display = 'block';
 
@@ -455,6 +753,15 @@
             // Share button (if supported)
             if (navigator.share) {
                 document.getElementById('shareBtn').style.display = 'flex';
+            }
+
+            // For pending orders: connect WebSocket for real-time updates
+            if (!order.status || order.status === 'pending') {
+                // Show connection indicator
+                document.getElementById('connectionIndicator').style.display = 'flex';
+                updateConnectionStatus('connecting');
+                // Connect to WebSocket
+                connectWebSocket();
             }
 
             // Show review prompt for completed orders
