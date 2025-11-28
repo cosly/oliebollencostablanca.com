@@ -771,6 +771,14 @@ footer p {
     font-weight: 600;
 }
 
+.login-info {
+    text-align: center;
+    color: var(--gray-600);
+    margin-bottom: 24px;
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
 .token-info {
     text-align: center;
     color: var(--gray-700);

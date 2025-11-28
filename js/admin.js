@@ -420,9 +420,9 @@ function displayScannedOrder(order) {
     document.getElementById('calcTotal').textContent = formatPrice(total);
 
     // Status
-    const statusEl = document.getElementById('scanOrderStatus');
-    statusEl.textContent = getStatusLabel(order.status || 'pending');
-    statusEl.className = 'order-status ' + (order.status || 'pending');
+    const orderStatusEl = document.getElementById('scanOrderStatus');
+    orderStatusEl.textContent = getStatusLabel(order.status || 'pending');
+    orderStatusEl.className = 'order-status ' + (order.status || 'pending');
 
     // Reset calculator
     document.getElementById('calcReceived').value = '';

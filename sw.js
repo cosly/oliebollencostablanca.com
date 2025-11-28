@@ -3,7 +3,7 @@
  * Offline-first PWA support
  */
 
-const CACHE_NAME = 'oliebollen-v5';
+const CACHE_NAME = 'oliebollen-v6';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
