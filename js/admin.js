@@ -7,7 +7,7 @@ const API_BASE = '/api';
 
 // Google Review URL - vervang PLACE_ID met je Google Business Place ID
 // Vind je Place ID via: https://developers.google.com/maps/documentation/places/web-service/place-id
-const GOOGLE_REVIEW_URL = 'https://search.google.com/local/writereview?placeid=PLACE_ID_HERE';
+const GOOGLE_REVIEW_URL = 'https://www.google.com/search?sca_esv=e0a4ad7df939e9f7&sxsrf=AE3TifM-rJd32nGqmBnpQWhAMotiVnfsWQ:1764302185750&si=AMgyJEtREmoPL4P1I5IDCfuA8gybfVI2d5Uj7QMwYCZHKDZ-EylOjFpgKjqGV3kPwQrcKnAPFNUr4Wd00dAj-b_2y6Ynt3Bom6JTJcBemtGypCm5rAFfAC7urhBSI2D5TzSm8gpcc2YOd7DfQwviTKujZRpsEUJ4GA%3D%3D&q=Oliebollen+Costa+Blanca+Reviews';
 
 // State
 let currentOrder = null;
