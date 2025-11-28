@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mijn Bestelling - Oliebollen Costa Blanca</title>
+    <meta name="description" content="Bekijk je oliebollen bestelling en QR code">
+    <meta name="theme-color" content="#e67e22">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Mijn Oliebollen">
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        .order-page {
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+        .order-hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 24px 16px;
+            text-align: center;
+        }
+        .order-hero h1 {
+            font-size: 1.3rem;
+            margin-bottom: 4px;
+        }
+        .order-hero .order-number-big {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .order-content {
+            padding: 16px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .qr-section {
+            background: white;
+            border-radius: var(--radius);
+            padding: 24px;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 16px;
+        }
+        .qr-section h2 {
+            font-size: 1rem;
+            color: var(--gray-500);
+            margin-bottom: 16px;
+        }
+        .qr-container {
+            background: white;
+            padding: 16px;
+            display: inline-block;
+            border-radius: var(--radius-sm);
+            border: 3px solid var(--gray-200);
+        }
+        .qr-container img,
+        .qr-container canvas {
+            display: block;
+            max-width: 200px;
+            width: 200px;
+            height: 200px;
+        }
+        .order-info-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+        }
+        .order-info-card h3 {
+            font-size: 0.9rem;
+            color: var(--gray-500);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: var(--gray-500);
+        }
+        .info-value {
+            font-weight: 600;
+            text-align: right;
+        }
+        .info-value.highlight {
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+        .timeslot-badge {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border: 2px solid var(--success);
+            color: #2e7d32;
+            padding: 16px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .timeslot-badge .date {
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+        .timeslot-badge .time {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .action-buttons .btn {
+            padding: 16px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-wallet {
+            background: #000;
+            color: white;
+        }
+        .btn-download {
+            background: var(--secondary);
+            color: white;
+        }
+        .add-to-home-tip {
+            background: #fff3cd;
+            border: 2px solid var(--warning);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-top: 16px;
+            font-size: 0.9rem;
+        }
+        .add-to-home-tip h4 {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .add-to-home-tip ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .add-to-home-tip li {
+            margin-bottom: 4px;
+        }
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .loading-state .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--gray-200);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .error-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .error-state .icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body class="order-page">
+    <!-- Loading State -->
+    <div id="loadingState" class="loading-state">
+        <div class="spinner"></div>
+        <p>Bestelling ophalen...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="error-state" style="display: none;">
+        <div class="icon">😕</div>
+        <h2>Bestelling niet gevonden</h2>
+        <p>Controleer het bestelnummer en probeer opnieuw.</p>
+        <a href="/" class="btn btn-primary" style="display: inline-block; margin-top: 20px;">Naar homepage</a>
+    </div>
+
+    <!-- Order Content -->
+    <div id="orderContent" style="display: none;">
+        <header class="order-hero">
+            <h1>Mijn Bestelling</h1>
+            <div class="order-number-big" id="displayOrderNumber">OB-XXXXXX</div>
+        </header>
+
+        <div class="order-content">
+            <!-- QR Code Section -->
+            <div class="qr-section">
+                <h2>Toon deze QR-code bij het ophalen</h2>
+                <div class="qr-container">
+                    <div id="qrCode"></div>
+                </div>
+            </div>
+
+            <!-- Timeslot -->
+            <div class="timeslot-badge">
+                <div class="date">31 december 2025</div>
+                <div class="time" id="displayTimeslot">10:00 - 10:30</div>
+            </div>
+
+            <!-- Order Details -->
+            <div class="order-info-card">
+                <h3>📦 Bestelling</h3>
+                <div id="orderItems">
+                    <!-- Items worden hier geladen -->
+                </div>
+                <div class="info-row" style="margin-top: 8px; padding-top: 12px; border-top: 2px dashed var(--gray-300);">
+                    <span class="info-label"><strong>Totaal (contant)</strong></span>
+                    <span class="info-value highlight" id="displayTotal">€ 0,00</span>
+                </div>
+            </div>
+
+            <!-- Customer Info -->
+            <div class="order-info-card">
+                <h3>👤 Ophaler</h3>
+                <div class="info-row">
+                    <span class="info-label">Naam</span>
+                    <span class="info-value" id="displayName">-</span>
+                </div>
+            </div>
+
+            <!-- Location Info -->
+            <div class="order-info-card">
+                <h3>📍 Ophaallocatie</h3>
+                <p style="color: var(--gray-700);">Wordt nog bekendgemaakt via e-mail</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-download" id="downloadQrBtn">
+                    📥 Download QR-code
+                </button>
+                <button class="btn btn-secondary" id="shareBtn" style="display: none;">
+                    📤 Deel bestelling
+                </button>
+            </div>
+
+            <!-- Add to Home Screen Tip -->
+            <div class="add-to-home-tip" id="addToHomeTip">
+                <h4>💡 Tip: Voeg toe aan startscherm</h4>
+                <p id="addToHomeInstructions"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Product names
+        const PRODUCT_NAMES = {
+            oliebol_krenten: 'Oliebollen met krenten',
+            oliebol_naturel: 'Oliebollen naturel',
+            appelbeignet: 'Appelbeignets'
+        };
+
+        // Get order number from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderNumber = urlParams.get('id') || urlParams.get('order');
+
+        // Detect device for add-to-home instructions
+        function getAddToHomeInstructions() {
+            const ua = navigator.userAgent;
+            if (/iPhone|iPad|iPod/.test(ua)) {
+                return `
+                    <ol>
+                        <li>Tik op het <strong>Deel</strong> icoon (vierkant met pijl omhoog)</li>
+                        <li>Scroll en tik op <strong>"Zet op beginscherm"</strong></li>
+                        <li>Tik op <strong>"Voeg toe"</strong></li>
+                    </ol>
+                `;
+            } else if (/Android/.test(ua)) {
+                return `
+                    <ol>
+                        <li>Tik op de <strong>drie puntjes</strong> (menu) rechtsboven</li>
+                        <li>Tik op <strong>"Toevoegen aan startscherm"</strong></li>
+                        <li>Tik op <strong>"Toevoegen"</strong></li>
+                    </ol>
+                `;
+            }
+            return `<p>Voeg deze pagina toe aan je favorieten voor snelle toegang!</p>`;
+        }
+
+        // Format price
+        function formatPrice(amount) {
+            return '€ ' + amount.toFixed(2).replace('.', ',');
+        }
+
+        // Load order data
+        async function loadOrder() {
+            if (!orderNumber) {
+                showError();
+                return;
+            }
+
+            try {
+                // Try to fetch from API
+                const response = await fetch(`/api/orders/${orderNumber}`);
+                if (response.ok) {
+                    const order = await response.json();
+                    displayOrder(order);
+                    return;
+                }
+            } catch (e) {
+                console.log('API not available, checking localStorage');
+            }
+
+            // Try localStorage (for offline/demo)
+            const savedOrders = localStorage.getItem('myOrders');
+            if (savedOrders) {
+                const orders = JSON.parse(savedOrders);
+                const order = orders.find(o => o.orderNumber === orderNumber);
+                if (order) {
+                    displayOrder(order);
+                    return;
+                }
+            }
+
+            // Check URL parameters for order data (from confirmation page)
+            const orderData = urlParams.get('data');
+            if (orderData) {
+                try {
+                    const order = JSON.parse(atob(orderData));
+                    displayOrder(order);
+                    // Save to localStorage for future access
+                    saveOrderToLocal(order);
+                    return;
+                } catch (e) {
+                    console.error('Invalid order data');
+                }
+            }
+
+            showError();
+        }
+
+        function saveOrderToLocal(order) {
+            const savedOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+            const existing = savedOrders.findIndex(o => o.orderNumber === order.orderNumber);
+            if (existing >= 0) {
+                savedOrders[existing] = order;
+            } else {
+                savedOrders.push(order);
+            }
+            localStorage.setItem('myOrders', JSON.stringify(savedOrders));
+        }
+
+        function displayOrder(order) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('orderContent').style.display = 'block';
+
+            // Order number
+            document.getElementById('displayOrderNumber').textContent = order.orderNumber;
+            document.title = `${order.orderNumber} - Oliebollen Costa Blanca`;
+
+            // Timeslot
+            document.getElementById('displayTimeslot').textContent = order.timeslotLabel || order.timeslot;
+
+            // Customer name
+            const customerName = order.customer?.naam || order.customerName || '-';
+            document.getElementById('displayName').textContent = customerName;
+
+            // Total
+            document.getElementById('displayTotal').textContent = formatPrice(order.total || 0);
+
+            // Order items
+            const itemsContainer = document.getElementById('orderItems');
+            itemsContainer.innerHTML = '';
+
+            const products = order.products || {};
+            for (const [product, qty] of Object.entries(products)) {
+                if (qty > 0) {
+                    const row = document.createElement('div');
+                    row.className = 'info-row';
+                    row.innerHTML = `
+                        <span class="info-label">${PRODUCT_NAMES[product] || product}</span>
+                        <span class="info-value">${qty}x</span>
+                    `;
+                    itemsContainer.appendChild(row);
+                }
+            }
+
+            // Generate QR code
+            generateQRCode(order.orderNumber);
+
+            // Add-to-home instructions
+            document.getElementById('addToHomeInstructions').innerHTML = getAddToHomeInstructions();
+
+            // Share button (if supported)
+            if (navigator.share) {
+                document.getElementById('shareBtn').style.display = 'flex';
+            }
+
+            // Save to localStorage
+            saveOrderToLocal(order);
+        }
+
+        function generateQRCode(orderNumber) {
+            const qrContainer = document.getElementById('qrCode');
+            qrContainer.innerHTML = '';
+
+            // Use QR Server API for simplicity
+            const qrImg = document.createElement('img');
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(orderNumber)}`;
+            qrImg.alt = 'QR Code';
+            qrImg.id = 'qrImage';
+            qrContainer.appendChild(qrImg);
+        }
+
+        function showError() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+        }
+
+        // Download QR code
+        document.getElementById('downloadQrBtn').addEventListener('click', async () => {
+            const qrImg = document.getElementById('qrImage');
+            if (!qrImg) return;
+
+            try {
+                // Fetch the image and convert to blob
+                const response = await fetch(qrImg.src);
+                const blob = await response.blob();
+
+                // Create download link
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `oliebollen-${orderNumber}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                // Fallback: open image in new tab
+                window.open(qrImg.src, '_blank');
+            }
+        });
+
+        // Share button
+        document.getElementById('shareBtn').addEventListener('click', async () => {
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: `Oliebollen bestelling ${orderNumber}`,
+                        text: `Mijn oliebollen bestelling voor 31 december`,
+                        url: window.location.href
+                    });
+                } catch (e) {
+                    console.log('Share cancelled');
+                }
+            }
+        });
+
+        // Initialize
+        loadOrder();
+    </script>
+</body>
+</html>

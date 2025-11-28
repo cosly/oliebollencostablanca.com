@@ -482,7 +482,12 @@ function saveOrderLocally(order, orderNumber) {
     localStorage.setItem('pendingOrders', JSON.stringify(pendingOrders));
 }
 
+// Store current order result for ticket generation
+let currentOrderResult = null;
+
 function showConfirmation(result) {
+    currentOrderResult = result;
+
     // Hide step indicator
     document.querySelector('.step-indicator').style.display = 'none';
 
@@ -519,8 +524,209 @@ function showConfirmation(result) {
         `;
     }
 
+    // Save order to localStorage for order.html page
+    saveOrderForViewing(result);
+
+    // Setup action buttons
+    setupConfirmationButtons(result);
+
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function saveOrderForViewing(result) {
+    const orderToSave = {
+        orderNumber: result.orderNumber,
+        products: orderData.products,
+        timeslot: orderData.timeslot.id,
+        timeslotLabel: orderData.timeslot.label,
+        customer: {
+            naam: orderData.customer.naam,
+            email: orderData.customer.email,
+            telefoon: orderData.customer.telefoon
+        },
+        total: calculateTotal(),
+        createdAt: new Date().toISOString()
+    };
+
+    // Save to myOrders in localStorage
+    const savedOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+    const existing = savedOrders.findIndex(o => o.orderNumber === result.orderNumber);
+    if (existing >= 0) {
+        savedOrders[existing] = orderToSave;
+    } else {
+        savedOrders.push(orderToSave);
+    }
+    localStorage.setItem('myOrders', JSON.stringify(savedOrders));
+}
+
+function setupConfirmationButtons(result) {
+    // View order page button
+    const viewOrderBtn = document.getElementById('viewOrderPageBtn');
+    if (viewOrderBtn) {
+        viewOrderBtn.href = `/order.html?id=${result.orderNumber}`;
+    }
+
+    // Download ticket button
+    const downloadBtn = document.getElementById('downloadTicketBtn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => generateAndDownloadTicket(result));
+    }
+}
+
+async function generateAndDownloadTicket(result) {
+    const canvas = document.getElementById('ticketCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Set canvas size (optimized for phone wallpaper/photo)
+    const width = 800;
+    const height = 1200;
+    canvas.width = width;
+    canvas.height = height;
+
+    // Background gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, '#e67e22');
+    gradient.addColorStop(0.3, '#d35400');
+    gradient.addColorStop(0.3, '#ffffff');
+    gradient.addColorStop(1, '#f8f9fa');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    // Header area
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 48px Fredoka, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Oliebollen Costa Blanca', width / 2, 80);
+
+    ctx.font = '28px Arial, sans-serif';
+    ctx.fillText('31 december 2025', width / 2, 130);
+
+    // White ticket area
+    const ticketY = 200;
+    const ticketHeight = 900;
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(0,0,0,0.1)';
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetY = 5;
+
+    // Rounded rectangle for ticket
+    roundRect(ctx, 40, ticketY, width - 80, ticketHeight, 20);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Order number
+    ctx.fillStyle = '#2c3e50';
+    ctx.font = 'bold 36px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('BESTELNUMMER', width / 2, ticketY + 60);
+
+    ctx.fillStyle = '#e67e22';
+    ctx.font = 'bold 56px Arial, sans-serif';
+    ctx.fillText(result.orderNumber, width / 2, ticketY + 130);
+
+    // Dashed line
+    ctx.strokeStyle = '#dddddd';
+    ctx.setLineDash([10, 5]);
+    ctx.beginPath();
+    ctx.moveTo(60, ticketY + 170);
+    ctx.lineTo(width - 60, ticketY + 170);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // QR Code placeholder area
+    const qrSize = 250;
+    const qrX = (width - qrSize) / 2;
+    const qrY = ticketY + 200;
+
+    // Load and draw QR code
+    try {
+        const qrImg = new Image();
+        qrImg.crossOrigin = 'anonymous';
+        await new Promise((resolve, reject) => {
+            qrImg.onload = resolve;
+            qrImg.onerror = reject;
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(result.orderNumber)}`;
+        });
+        ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+    } catch (e) {
+        // Fallback: draw placeholder
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(qrX, qrY, qrSize, qrSize);
+        ctx.fillStyle = '#999';
+        ctx.font = '20px Arial';
+        ctx.fillText('QR Code', width / 2, qrY + qrSize / 2);
+    }
+
+    // Timeslot
+    const infoY = qrY + qrSize + 50;
+    ctx.fillStyle = '#27ae60';
+    ctx.font = 'bold 32px Arial, sans-serif';
+    ctx.fillText('OPHAALTIJD', width / 2, infoY);
+
+    ctx.fillStyle = '#2c3e50';
+    ctx.font = 'bold 44px Arial, sans-serif';
+    ctx.fillText(orderData.timeslot.label, width / 2, infoY + 55);
+
+    // Dashed line
+    ctx.strokeStyle = '#dddddd';
+    ctx.setLineDash([10, 5]);
+    ctx.beginPath();
+    ctx.moveTo(60, infoY + 90);
+    ctx.lineTo(width - 60, infoY + 90);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Order details
+    const detailsY = infoY + 130;
+    ctx.fillStyle = '#666666';
+    ctx.font = '24px Arial, sans-serif';
+    ctx.textAlign = 'left';
+
+    let lineY = detailsY;
+    for (const [product, qty] of Object.entries(orderData.products)) {
+        if (qty > 0) {
+            ctx.fillText(`${qty}x ${PRODUCT_NAMES[product]}`, 80, lineY);
+            lineY += 40;
+        }
+    }
+
+    // Total
+    ctx.font = 'bold 32px Arial, sans-serif';
+    ctx.fillStyle = '#e67e22';
+    ctx.textAlign = 'center';
+    ctx.fillText(`TOTAAL: ${formatPrice(calculateTotal())}`, width / 2, lineY + 30);
+
+    // Customer name
+    ctx.fillStyle = '#999999';
+    ctx.font = '24px Arial, sans-serif';
+    ctx.fillText(orderData.customer.naam, width / 2, lineY + 80);
+
+    // Footer
+    ctx.fillStyle = '#cccccc';
+    ctx.font = '20px Arial, sans-serif';
+    ctx.fillText('Betaling contant bij ophalen', width / 2, height - 60);
+
+    // Download the image
+    const link = document.createElement('a');
+    link.download = `oliebollen-ticket-${result.orderNumber}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+// Helper function for rounded rectangles
+function roundRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
 }
 
 // =====================

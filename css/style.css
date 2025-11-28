@@ -534,6 +534,33 @@ h1, h2, h3 {
     font-size: 0.9rem;
 }
 
+/* Save Actions on Confirmation */
+.save-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 24px 0;
+}
+
+.save-actions .btn {
+    padding: 16px 20px;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.btn-download {
+    background: var(--secondary);
+    color: var(--white);
+}
+
+.btn-download:active {
+    background: #1a252f;
+}
+
 /* Info Section */
 .info-section {
     margin: 32px 0;
