@@ -62,9 +62,62 @@ function corsHeaders(request) {
     return {
         'Access-Control-Allow-Origin': allowedOrigin,
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
     };
 }
+
+// Session token generation and validation
+const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+async function generateSessionToken(password, env) {
+    const timestamp = Date.now();
+    const data = `${password}:${timestamp}:${env.ADMIN_PASSWORD}`;
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(data));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return `${hash}:${timestamp}`;
+}
+
+async function validateSessionToken(token, env) {
+    if (!token || !env.ADMIN_PASSWORD) return false;
+
+    const parts = token.split(':');
+    if (parts.length !== 2) return false;
+
+    const [hash, timestamp] = parts;
+    const tokenTime = parseInt(timestamp);
+
+    // Check if token is expired
+    if (Date.now() - tokenTime > SESSION_DURATION) {
+        return false;
+    }
+
+    // Verify the hash
+    const data = `${env.ADMIN_PASSWORD}:${timestamp}:${env.ADMIN_PASSWORD}`;
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(data));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const expectedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    return hash === expectedHash;
+}
+
+// Check if request is authenticated for admin routes
+async function isAuthenticated(request, env) {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return false;
+    }
+    const token = authHeader.substring(7);
+    return await validateSessionToken(token, env);
+}
+
+// Admin-only routes that require authentication
+const ADMIN_ROUTES = [
+    '/api/orders',
+    '/api/timeslots'
+];
 
 export default {
     async fetch(request, env, ctx) {
@@ -94,6 +147,30 @@ export default {
 
 async function handleAPI(request, env, ctx, path) {
     try {
+        // POST /api/auth/login - No auth required
+        if (path === '/api/auth/login' && request.method === 'POST') {
+            return await handleLogin(request, env);
+        }
+
+        // POST /api/auth/verify - Verify token is still valid
+        if (path === '/api/auth/verify' && request.method === 'POST') {
+            return await handleVerify(request, env);
+        }
+
+        // Check authentication for admin routes
+        const requiresAuth = ADMIN_ROUTES.some(route => path.startsWith(route));
+        if (requiresAuth) {
+            // Allow public order creation (customers creating orders)
+            const isPublicOrderCreation = path === '/api/orders' && request.method === 'POST';
+
+            if (!isPublicOrderCreation && !(await isAuthenticated(request, env))) {
+                return Response.json(
+                    { error: 'Unauthorized', message: 'Authenticatie vereist' },
+                    { status: 401, headers: corsHeaders(request) }
+                );
+            }
+        }
+
         // GET /api/orders
         if (path === '/api/orders' && request.method === 'GET') {
             return await getOrders(request, env);
@@ -353,6 +430,61 @@ async function updateCapacity(request, env) {
     }
 
     return Response.json({ success: true }, { headers: corsHeaders(request) });
+}
+
+// =====================
+// Authentication
+// =====================
+async function handleLogin(request, env) {
+    const data = await request.json();
+    const { password } = data;
+
+    if (!password) {
+        return Response.json(
+            { error: 'Password required' },
+            { status: 400, headers: corsHeaders(request) }
+        );
+    }
+
+    // Check password against environment variable
+    if (!env.ADMIN_PASSWORD) {
+        console.error('ADMIN_PASSWORD not configured');
+        return Response.json(
+            { error: 'Server configuration error' },
+            { status: 500, headers: corsHeaders(request) }
+        );
+    }
+
+    if (password !== env.ADMIN_PASSWORD) {
+        return Response.json(
+            { error: 'Invalid password', message: 'Onjuist wachtwoord' },
+            { status: 401, headers: corsHeaders(request) }
+        );
+    }
+
+    // Generate session token
+    const token = await generateSessionToken(password, env);
+
+    return Response.json(
+        { success: true, token, expiresIn: SESSION_DURATION },
+        { headers: corsHeaders(request) }
+    );
+}
+
+async function handleVerify(request, env) {
+    const isValid = await isAuthenticated(request, env);
+
+    if (isValid) {
+        return Response.json(
+            { valid: true },
+            { headers: corsHeaders(request) }
+        );
+    }
+
+    return Response.json(
+        { valid: false, message: 'Token verlopen of ongeldig' },
+        { status: 401, headers: corsHeaders(request) }
+    );
 }
 
 // =====================

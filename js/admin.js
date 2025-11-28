@@ -4,6 +4,7 @@
  */
 
 const API_BASE = '/api';
+const SESSION_KEY = 'admin_session_token';
 
 // Google Review URL - vervang PLACE_ID met je Google Business Place ID
 // Vind je Place ID via: https://developers.google.com/maps/documentation/places/web-service/place-id
@@ -15,6 +16,7 @@ let orders = [];
 let timeslots = [];
 let html5QrCode = null;
 let scannerRunning = false;
+let authToken = null;
 
 // Product info
 const PRODUCT_NAMES = {
@@ -30,8 +32,123 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// =====================
+// Authentication
+// =====================
+function getAuthHeaders() {
+    return authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+}
+
+async function checkAuth() {
+    authToken = localStorage.getItem(SESSION_KEY);
+
+    if (!authToken) {
+        showLogin();
+        return false;
+    }
+
+    // Verify token with server
+    try {
+        const response = await fetch(`${API_BASE}/auth/verify`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.valid) {
+                showAdmin();
+                return true;
+            }
+        }
+    } catch (e) {
+        // If offline and token exists, allow access
+        if (!navigator.onLine && authToken) {
+            showAdmin();
+            return true;
+        }
+    }
+
+    // Token invalid or expired
+    localStorage.removeItem(SESSION_KEY);
+    authToken = null;
+    showLogin();
+    return false;
+}
+
+function showLogin() {
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('adminContent').style.display = 'none';
+}
+
+function showAdmin() {
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('adminContent').style.display = 'block';
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+
+    const password = document.getElementById('adminPassword').value;
+    const errorEl = document.getElementById('loginError');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+
+    errorEl.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Bezig...';
+
+    try {
+        const response = await fetch(`${API_BASE}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.token) {
+            authToken = data.token;
+            localStorage.setItem(SESSION_KEY, data.token);
+            showAdmin();
+            initAdminPanel();
+        } else {
+            errorEl.textContent = data.message || 'Onjuist wachtwoord';
+            errorEl.style.display = 'block';
+        }
+    } catch (error) {
+        errorEl.textContent = 'Verbindingsfout. Probeer opnieuw.';
+        errorEl.style.display = 'block';
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Inloggen';
+}
+
+function handleLogout() {
+    localStorage.removeItem(SESSION_KEY);
+    authToken = null;
+    document.getElementById('adminPassword').value = '';
+    showLogin();
+}
+
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Setup login form
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+
+    // Check authentication
+    const isAuthed = await checkAuth();
+
+    if (isAuthed) {
+        initAdminPanel();
+    }
+});
+
+function initAdminPanel() {
     initTabs();
     initScanner();
     initCalculator();
@@ -39,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadOrders();
     loadTimeslots();
     checkConnection();
-});
+}
 
 // =====================
 // Tab Navigation
@@ -190,7 +307,9 @@ function onScanFailure(error) {
 async function lookupOrder(orderNumber) {
     try {
         // Try API first
-        const response = await fetch(`${API_BASE}/orders/${orderNumber}`);
+        const response = await fetch(`${API_BASE}/orders/${orderNumber}`, {
+            headers: getAuthHeaders()
+        });
         if (response.ok) {
             const order = await response.json();
             displayScannedOrder(order);
@@ -274,7 +393,8 @@ async function completeOrder() {
     try {
         // Try API
         await fetch(`${API_BASE}/orders/${currentOrder.orderNumber}/complete`, {
-            method: 'POST'
+            method: 'POST',
+            headers: getAuthHeaders()
         });
     } catch (e) {
         console.log('API niet beschikbaar, markeer lokaal');
@@ -452,9 +572,14 @@ function updateChange() {
 // =====================
 async function loadOrders() {
     try {
-        const response = await fetch(`${API_BASE}/orders`);
+        const response = await fetch(`${API_BASE}/orders`, {
+            headers: getAuthHeaders()
+        });
         if (response.ok) {
             orders = await response.json();
+        } else if (response.status === 401) {
+            handleLogout();
+            return;
         }
     } catch (e) {
         console.log('API niet beschikbaar, laad demo data');
@@ -604,7 +729,10 @@ async function quickComplete(orderNumber) {
 
         // Try API
         try {
-            await fetch(`${API_BASE}/orders/${orderNumber}/complete`, { method: 'POST' });
+            await fetch(`${API_BASE}/orders/${orderNumber}/complete`, {
+                method: 'POST',
+                headers: getAuthHeaders()
+            });
         } catch (e) {}
     }
 }
@@ -646,7 +774,10 @@ async function confirmNoshow() {
         updateOrderCounts();
 
         try {
-            await fetch(`${API_BASE}/orders/${orderNumber}/noshow`, { method: 'POST' });
+            await fetch(`${API_BASE}/orders/${orderNumber}/noshow`, {
+                method: 'POST',
+                headers: getAuthHeaders()
+            });
         } catch (e) {}
     }
 
@@ -658,9 +789,14 @@ async function confirmNoshow() {
 // =====================
 async function loadTimeslots() {
     try {
-        const response = await fetch(`${API_BASE}/timeslots`);
+        const response = await fetch(`${API_BASE}/timeslots`, {
+            headers: getAuthHeaders()
+        });
         if (response.ok) {
             timeslots = await response.json();
+        } else if (response.status === 401) {
+            handleLogout();
+            return;
         }
     } catch (e) {
         timeslots = generateDefaultTimeslots();
@@ -749,7 +885,10 @@ async function saveCapacity() {
     try {
         await fetch(`${API_BASE}/timeslots/capacity`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify(updates)
         });
     } catch (e) {

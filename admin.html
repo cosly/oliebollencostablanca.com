@@ -12,10 +12,34 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body class="admin-body">
-    <header class="admin-header">
-        <h1>Admin Panel</h1>
-        <span id="connectionStatus" class="connection-status">●</span>
-    </header>
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>Oliebollen Costa Blanca</h1>
+                <p>Admin Panel</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="adminPassword">Wachtwoord</label>
+                    <input type="password" id="adminPassword" name="password" required
+                           placeholder="Voer wachtwoord in" autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-login">Inloggen</button>
+                <p id="loginError" class="login-error" style="display: none;">Onjuist wachtwoord</p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Content (hidden until logged in) -->
+    <div id="adminContent" class="admin-content-wrapper" style="display: none;">
+        <header class="admin-header">
+            <h1>Admin Panel</h1>
+            <div class="header-right">
+                <span id="connectionStatus" class="connection-status">●</span>
+                <button id="logoutBtn" class="btn-logout" title="Uitloggen">Uitloggen</button>
+            </div>
+        </header>
 
     <nav class="admin-nav">
         <button class="active" data-tab="scanner">Scanner</button>
@@ -271,6 +295,8 @@
             </p>
         </div>
     </div>
+
+    </div><!-- End adminContent wrapper -->
 
     <script src="js/admin.js"></script>
 </body>
