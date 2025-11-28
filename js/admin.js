@@ -1002,6 +1002,243 @@ function checkConnection() {
 }
 
 // =====================
+// CSV Import
+// =====================
+document.getElementById('importCsv')?.addEventListener('click', () => {
+    document.getElementById('csvFileInput').click();
+});
+
+document.getElementById('csvFileInput')?.addEventListener('change', handleCsvImport);
+
+document.getElementById('closeImportModal')?.addEventListener('click', () => {
+    document.getElementById('importModal').style.display = 'none';
+    // Reload orders after import
+    loadOrders();
+    updateTotals();
+});
+
+async function handleCsvImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Reset file input
+    event.target.value = '';
+
+    // Show modal with progress
+    const modal = document.getElementById('importModal');
+    const progressDiv = document.getElementById('importProgress');
+    const resultsContainer = document.getElementById('importResultsContainer');
+    const resultsDiv = document.getElementById('importResults');
+    const summaryDiv = document.getElementById('importSummary');
+
+    modal.style.display = 'flex';
+    progressDiv.style.display = 'block';
+    resultsContainer.style.display = 'none';
+
+    try {
+        const text = await file.text();
+        const rows = parseCSV(text);
+
+        if (rows.length === 0) {
+            throw new Error('Geen data gevonden in CSV bestand');
+        }
+
+        // Process rows
+        const results = [];
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const row of rows) {
+            try {
+                const result = await importOrder(row);
+                results.push({ success: true, message: `${row.naam}: ${result.orderNumber}` });
+                successCount++;
+            } catch (error) {
+                results.push({ success: false, message: `${row.naam || 'Onbekend'}: ${error.message}` });
+                errorCount++;
+            }
+        }
+
+        // Show results
+        progressDiv.style.display = 'none';
+        resultsContainer.style.display = 'block';
+
+        resultsDiv.innerHTML = results.map(r =>
+            `<div class="import-result-item ${r.success ? 'success' : 'error'}">${r.message}</div>`
+        ).join('');
+
+        summaryDiv.innerHTML = `${successCount} geïmporteerd, ${errorCount} mislukt`;
+
+    } catch (error) {
+        progressDiv.style.display = 'none';
+        resultsContainer.style.display = 'block';
+        resultsDiv.innerHTML = `<div class="import-result-item error">${error.message}</div>`;
+        summaryDiv.innerHTML = 'Import mislukt';
+    }
+}
+
+function parseCSV(text) {
+    const lines = text.split(/\r?\n/).filter(line => line.trim());
+    if (lines.length < 2) return [];
+
+    // Parse header
+    const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+
+    // Map column names
+    const columnMap = {
+        naam: ['naam', 'name', 'klant', 'customer'],
+        email: ['email', 'e-mail', 'mail'],
+        telefoon: ['telefoon', 'tel', 'phone', 'telefoonnummer'],
+        timeslot: ['tijdslot', 'timeslot', 'tijd', 'time'],
+        krenten: ['krenten', 'oliebol_krenten', 'met krenten'],
+        naturel: ['naturel', 'oliebol_naturel', 'zonder krenten'],
+        appelbeignet: ['appelbeignet', 'appelbeignets', 'appel']
+    };
+
+    const indices = {};
+    for (const [key, variants] of Object.entries(columnMap)) {
+        indices[key] = headers.findIndex(h => variants.some(v => h.includes(v)));
+    }
+
+    // Parse data rows
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+        const values = parseCSVLine(lines[i]);
+        if (values.length === 0) continue;
+
+        const row = {
+            naam: values[indices.naam] || '',
+            email: values[indices.email] || '',
+            telefoon: values[indices.telefoon] || '',
+            timeslot: values[indices.timeslot] || '',
+            krenten: parseInt(values[indices.krenten]) || 0,
+            naturel: parseInt(values[indices.naturel]) || 0,
+            appelbeignet: parseInt(values[indices.appelbeignet]) || 0
+        };
+
+        // Skip rows without name or products
+        if (row.naam && (row.krenten > 0 || row.naturel > 0 || row.appelbeignet > 0)) {
+            rows.push(row);
+        }
+    }
+
+    return rows;
+}
+
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+
+        if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+                current += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+        } else if ((char === ',' || char === ';') && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+
+    result.push(current.trim());
+    return result;
+}
+
+function parseTimeslot(timeslotStr) {
+    if (!timeslotStr) return null;
+
+    // Try to parse time format like "10:00", "10:00 - 10:30", "slot_1000"
+    const timeMatch = timeslotStr.match(/(\d{1,2}):?(\d{2})?/);
+    if (!timeMatch) return null;
+
+    const hour = parseInt(timeMatch[1]);
+    const minute = parseInt(timeMatch[2]) || 0;
+
+    // Round to nearest 30 min slot
+    const roundedMinute = minute < 30 ? '00' : '30';
+    const slotId = `slot_${hour.toString().padStart(2, '0')}${roundedMinute}`;
+
+    // Find the slot
+    const slot = timeslots.find(s => s.id === slotId);
+    if (slot) {
+        return { id: slot.id, label: slot.label };
+    }
+
+    // Fallback: create label
+    const endHour = roundedMinute === '30' ? hour + 1 : hour;
+    const endMinute = roundedMinute === '30' ? '00' : '30';
+    return {
+        id: slotId,
+        label: `${hour.toString().padStart(2, '0')}:${roundedMinute} - ${endHour.toString().padStart(2, '0')}:${endMinute}`
+    };
+}
+
+async function importOrder(row) {
+    // Parse timeslot
+    const timeslot = parseTimeslot(row.timeslot);
+    if (!timeslot) {
+        throw new Error('Ongeldig tijdslot');
+    }
+
+    const orderData = {
+        customer: {
+            naam: row.naam,
+            email: row.email || `${row.naam.toLowerCase().replace(/\s+/g, '.')}@import.local`,
+            telefoon: row.telefoon || ''
+        },
+        products: {
+            oliebol_krenten: row.krenten,
+            oliebol_naturel: row.naturel,
+            appelbeignet: row.appelbeignet
+        },
+        timeslot: timeslot.id,
+        timeslotLabel: timeslot.label
+    };
+
+    // Try API first
+    try {
+        const response = await fetch(`${API_BASE}/orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || error.error || 'API fout');
+        }
+
+        return await response.json();
+    } catch (error) {
+        // If API fails, create locally
+        if (error.message.includes('fetch')) {
+            const orderNumber = 'OB-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+            const localOrder = {
+                orderNumber,
+                ...orderData,
+                total: calculateOrderTotal(orderData),
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+
+            orders.push(localOrder);
+            localStorage.setItem('orders', JSON.stringify(orders));
+
+            return { orderNumber };
+        }
+        throw error;
+    }
+}
+
+// =====================
 // Service Worker
 // =====================
 if ('serviceWorker' in navigator) {
