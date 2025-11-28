@@ -29,7 +29,24 @@ function calculateTotal(products) {
 
 // GET /api/orders
 export async function onRequestGet(context) {
-    return Response.json([]);
+    const { env } = context;
+
+    try {
+        const { results } = await env.DB.prepare(
+            `SELECT * FROM orders ORDER BY created_at DESC`
+        ).all();
+
+        // Parse JSON products field
+        const orders = results.map(order => ({
+            ...order,
+            products: JSON.parse(order.products || '{}')
+        }));
+
+        return Response.json(orders);
+    } catch (error) {
+        console.error('Database error:', error);
+        return Response.json({ error: 'Database error', details: error.message }, { status: 500 });
+    }
 }
 
 // POST /api/orders
@@ -44,6 +61,35 @@ export async function onRequestPost(context) {
     const orderNumber = generateOrderNumber();
     const total = data.total || calculateTotal(data.products);
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${orderNumber}`;
+    const createdAt = new Date().toISOString();
+
+    // Save to database
+    try {
+        await env.DB.prepare(
+            `INSERT INTO orders (order_number, customer_name, customer_email, customer_phone, products, timeslot, timeslot_label, total, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(
+            orderNumber,
+            data.customer.naam,
+            data.customer.email,
+            data.customer.telefoon || '',
+            JSON.stringify(data.products),
+            data.timeslot,
+            data.timeslotLabel || data.timeslot,
+            total,
+            'pending',
+            createdAt
+        ).run();
+
+        // Update timeslot booked count
+        await env.DB.prepare(
+            `UPDATE timeslots SET booked = booked + 1 WHERE id = ?`
+        ).bind(data.timeslot).run();
+
+    } catch (error) {
+        console.error('Database error:', error);
+        return Response.json({ error: 'Database error', details: error.message }, { status: 500 });
+    }
 
     // Send confirmation email
     if (env.RESEND_API_KEY) {
