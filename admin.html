@@ -87,7 +87,10 @@
             <div class="manual-lookup">
                 <h3>Of zoek handmatig:</h3>
                 <div class="lookup-form">
-                    <input type="text" id="manualOrderNumber" placeholder="Bestelnummer of naam..." class="form-input">
+                    <div class="autocomplete-container">
+                        <input type="text" id="manualOrderNumber" placeholder="Bestelnummer of naam..." class="form-input" autocomplete="off">
+                        <div id="autocompleteResults" class="autocomplete-results"></div>
+                    </div>
                     <button id="lookupBtn" class="btn btn-primary">Zoeken</button>
                 </div>
             </div>

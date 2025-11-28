@@ -74,10 +74,57 @@ function initScanner() {
     document.getElementById('completeOrderBtn').addEventListener('click', completeOrder);
     document.getElementById('lookupBtn').addEventListener('click', manualLookup);
 
-    // Enter key for manual lookup
-    document.getElementById('manualOrderNumber').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            manualLookup();
+    // Autocomplete setup
+    const searchInput = document.getElementById('manualOrderNumber');
+    const resultsContainer = document.getElementById('autocompleteResults');
+
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        if (query.length >= 2) {
+            showAutocompleteResults(query);
+        } else {
+            hideAutocompleteResults();
+        }
+    });
+
+    // Keyboard navigation for autocomplete
+    searchInput.addEventListener('keydown', (e) => {
+        const items = resultsContainer.querySelectorAll('.autocomplete-item');
+        const activeItem = resultsContainer.querySelector('.autocomplete-item.active');
+        let currentIndex = Array.from(items).indexOf(activeItem);
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (currentIndex < items.length - 1) {
+                items[currentIndex]?.classList.remove('active');
+                items[currentIndex + 1]?.classList.add('active');
+                items[currentIndex + 1]?.scrollIntoView({ block: 'nearest' });
+            } else if (currentIndex === -1 && items.length > 0) {
+                items[0].classList.add('active');
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (currentIndex > 0) {
+                items[currentIndex]?.classList.remove('active');
+                items[currentIndex - 1]?.classList.add('active');
+                items[currentIndex - 1]?.scrollIntoView({ block: 'nearest' });
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (activeItem) {
+                selectAutocompleteItem(activeItem.dataset.orderNumber);
+            } else {
+                manualLookup();
+            }
+        } else if (e.key === 'Escape') {
+            hideAutocompleteResults();
+        }
+    });
+
+    // Close autocomplete when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.autocomplete-container')) {
+            hideAutocompleteResults();
         }
     });
 }
@@ -281,8 +328,81 @@ function showReviewModal(order) {
 function manualLookup() {
     const query = document.getElementById('manualOrderNumber').value.trim();
     if (query) {
+        hideAutocompleteResults();
         lookupOrder(query);
     }
+}
+
+// =====================
+// Autocomplete
+// =====================
+function showAutocompleteResults(query) {
+    const resultsContainer = document.getElementById('autocompleteResults');
+    const queryLower = query.toLowerCase();
+
+    // Filter orders by order number or customer name
+    const matchingOrders = orders.filter(order => {
+        const orderNumber = (order.orderNumber || '').toLowerCase();
+        const customerName = (order.customer?.naam || '').toLowerCase();
+        return orderNumber.includes(queryLower) || customerName.includes(queryLower);
+    }).slice(0, 8); // Limit to 8 results
+
+    if (matchingOrders.length === 0) {
+        resultsContainer.innerHTML = '<div class="autocomplete-no-results">Geen resultaten gevonden</div>';
+        resultsContainer.classList.add('show');
+        return;
+    }
+
+    resultsContainer.innerHTML = matchingOrders.map(order => {
+        const statusClass = order.status || 'pending';
+        const statusLabel = getStatusLabel(order.status);
+        const total = order.total || calculateOrderTotal(order);
+
+        return `
+            <div class="autocomplete-item" data-order-number="${order.orderNumber}">
+                <div class="autocomplete-item-main">
+                    <span class="autocomplete-order-number">${highlightMatch(order.orderNumber, query)}</span>
+                    <span class="autocomplete-customer">${highlightMatch(order.customer?.naam || '', query)}</span>
+                </div>
+                <div class="autocomplete-item-details">
+                    <span class="autocomplete-timeslot">${order.timeslotLabel || order.timeslot}</span>
+                    <span class="autocomplete-total">${formatPrice(total)}</span>
+                    <span class="autocomplete-status ${statusClass}">${statusLabel}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add click handlers to items
+    resultsContainer.querySelectorAll('.autocomplete-item').forEach(item => {
+        item.addEventListener('click', () => {
+            selectAutocompleteItem(item.dataset.orderNumber);
+        });
+    });
+
+    resultsContainer.classList.add('show');
+}
+
+function hideAutocompleteResults() {
+    const resultsContainer = document.getElementById('autocompleteResults');
+    resultsContainer.classList.remove('show');
+    resultsContainer.innerHTML = '';
+}
+
+function selectAutocompleteItem(orderNumber) {
+    document.getElementById('manualOrderNumber').value = orderNumber;
+    hideAutocompleteResults();
+    lookupOrder(orderNumber);
+}
+
+function highlightMatch(text, query) {
+    if (!text || !query) return text;
+    const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+    return text.replace(regex, '<strong>$1</strong>');
+}
+
+function escapeRegex(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // =====================
