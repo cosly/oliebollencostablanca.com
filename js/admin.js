@@ -503,7 +503,7 @@ function generateDefaultTimeslots() {
                 start: time,
                 end: endTime,
                 label: `${time} - ${endTime}`,
-                capacity: 10,
+                capacity: 150,  // 150 stuks per half uur
                 booked: 0
             });
         }
@@ -511,13 +511,23 @@ function generateDefaultTimeslots() {
     return slots;
 }
 
+function calculateBookedItems(slotId) {
+    return orders
+        .filter(o => o.timeslot === slotId)
+        .reduce((sum, o) => {
+            return sum + Object.values(o.products).reduce((a, b) => a + (b || 0), 0);
+        }, 0);
+}
+
 function renderCapacityList() {
     const container = document.getElementById('capacityList');
 
     container.innerHTML = timeslots.map(slot => {
-        const booked = orders.filter(o => o.timeslot === slot.id).length;
+        // Use booked from API (total items), or calculate from orders if not available
+        const booked = slot.booked !== undefined ? slot.booked : calculateBookedItems(slot.id);
         const percentage = slot.capacity > 0 ? (booked / slot.capacity) * 100 : 0;
         const fillClass = percentage >= 100 ? 'full' : percentage >= 80 ? 'warning' : '';
+        const orderCount = orders.filter(o => o.timeslot === slot.id).length;
 
         return `
             <div class="capacity-item" data-slot="${slot.id}">
@@ -525,9 +535,9 @@ function renderCapacityList() {
                 <div class="capacity-bar">
                     <div class="capacity-fill ${fillClass}" style="width: ${Math.min(percentage, 100)}%"></div>
                 </div>
-                <span class="capacity-booked">${booked}/${slot.capacity}</span>
+                <span class="capacity-booked" title="${orderCount} bestellingen">${booked}/${slot.capacity} stuks</span>
                 <input type="number" class="capacity-input" value="${slot.capacity}"
-                       min="0" max="100" data-slot="${slot.id}">
+                       min="0" max="500" data-slot="${slot.id}">
             </div>
         `;
     }).join('');

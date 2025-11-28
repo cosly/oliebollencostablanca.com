@@ -77,6 +77,11 @@ function handleQuantityChange(e) {
     updateTotalPrice();
     updateStep1Button();
 
+    // Re-render timeslots to reflect new capacity requirements
+    if (loadedTimeslots.length > 0) {
+        renderTimeslots(loadedTimeslots);
+    }
+
     // Haptic feedback (if supported)
     if (navigator.vibrate) {
         navigator.vibrate(10);
@@ -178,6 +183,9 @@ async function loadTimeslots() {
     renderTimeslots(demoTimeslots);
 }
 
+// Store loaded timeslots for re-rendering when order quantity changes
+let loadedTimeslots = [];
+
 function generateDemoTimeslots() {
     const slots = [];
     const startHour = 10;
@@ -190,9 +198,9 @@ function generateDemoTimeslots() {
             const endHr = min + 30 >= 60 ? hour + 1 : hour;
             const endTime = `${endHr.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}`;
 
-            // Random availability for demo
-            const capacity = 10;
-            const booked = Math.floor(Math.random() * 12);
+            // Demo: 150 stuks capaciteit per slot
+            const capacity = 150;
+            const booked = Math.floor(Math.random() * 160);
             const available = Math.max(0, capacity - booked);
 
             slots.push({
@@ -211,26 +219,67 @@ function generateDemoTimeslots() {
 }
 
 function renderTimeslots(timeslots) {
+    // Store for re-rendering when quantity changes
+    loadedTimeslots = timeslots;
+
     const grid = document.getElementById('timeslotGrid');
     grid.innerHTML = '';
 
+    const orderQuantity = getTotalItems();
+
     timeslots.forEach(slot => {
         const div = document.createElement('div');
-        div.className = 'timeslot' + (slot.available === 0 ? ' unavailable' : '');
+        // Slot is unavailable if no capacity OR if order quantity exceeds available
+        const hasEnoughCapacity = slot.available >= orderQuantity && orderQuantity > 0;
+        const isUnavailable = slot.available === 0 || (orderQuantity > 0 && !hasEnoughCapacity);
+
+        div.className = 'timeslot' + (isUnavailable ? ' unavailable' : '');
         div.dataset.slotId = slot.id;
         div.dataset.slotLabel = slot.label;
 
+        // Show availability status
+        let availText;
+        if (slot.available === 0) {
+            availText = 'Vol!';
+        } else if (orderQuantity > 0 && !hasEnoughCapacity) {
+            availText = `${slot.available} stuks (te weinig)`;
+        } else {
+            availText = `${slot.available} stuks`;
+        }
+
         div.innerHTML = `
             <div class="timeslot-time">${slot.start}</div>
-            <div class="timeslot-spots">${slot.available > 0 ? slot.available + ' plekken' : 'Vol!'}</div>
+            <div class="timeslot-spots">${availText}</div>
         `;
 
-        if (slot.available > 0) {
+        if (!isUnavailable) {
             div.addEventListener('click', () => selectTimeslot(div, slot));
         }
 
         grid.appendChild(div);
     });
+
+    // Re-check if selected timeslot is still valid
+    if (selectedTimeslot) {
+        const stillValid = timeslots.find(s => s.id === selectedTimeslot.id);
+        if (stillValid && stillValid.available >= orderQuantity) {
+            // Re-select the slot visually
+            const selectedEl = grid.querySelector(`[data-slot-id="${selectedTimeslot.id}"]`);
+            if (selectedEl && !selectedEl.classList.contains('unavailable')) {
+                selectedEl.classList.add('selected');
+            } else {
+                // Slot became unavailable, deselect
+                selectedTimeslot = null;
+                orderData.timeslot = null;
+                document.getElementById('toStep3').disabled = true;
+            }
+        } else {
+            // Slot no longer valid for this order size
+            selectedTimeslot = null;
+            orderData.timeslot = null;
+            document.getElementById('toStep3').disabled = true;
+        }
+    }
 }
 
 function selectTimeslot(element, slot) {
@@ -380,8 +429,24 @@ async function submitOrder() {
 
             if (response.ok) {
                 orderResult = await response.json();
+            } else {
+                // Handle capacity error
+                const errorData = await response.json();
+                if (errorData.error === 'Onvoldoende capaciteit') {
+                    alert(errorData.message || 'Er is niet genoeg capaciteit in dit tijdslot. Kies een ander tijdslot.');
+                    // Reload timeslots to get fresh availability
+                    loadTimeslots();
+                    goToStep(2);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '✓ Bestelling plaatsen';
+                    return;
+                }
+                throw new Error(errorData.error || 'Bestelling mislukt');
             }
         } catch (e) {
+            if (e.message && e.message.includes('capaciteit')) {
+                throw e;
+            }
             console.log('API niet beschikbaar, sla lokaal op');
         }
 
@@ -401,7 +466,7 @@ async function submitOrder() {
 
     } catch (error) {
         console.error('Error submitting order:', error);
-        alert('Er ging iets mis. Probeer het opnieuw.');
+        alert(error.message || 'Er ging iets mis. Probeer het opnieuw.');
         submitBtn.disabled = false;
         submitBtn.textContent = '✓ Bestelling plaatsen';
     }

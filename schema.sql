@@ -21,31 +21,34 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 -- Timeslots table
+-- capacity = maximaal aantal STUKS per tijdslot (niet orders!)
+-- booked = totaal aantal STUKS al geboekt in dit slot
 CREATE TABLE IF NOT EXISTS timeslots (
     id TEXT PRIMARY KEY,
     label TEXT NOT NULL,
-    capacity INTEGER DEFAULT 10,
-    booked INTEGER DEFAULT 0
+    capacity INTEGER DEFAULT 150,  -- max 150 stuks per half uur
+    booked INTEGER DEFAULT 0       -- aantal stuks al geboekt
 );
 
 -- Initialize timeslots (30-minute intervals from 10:00 to 18:00)
+-- Standaard capaciteit: 150 stuks per half uur
 INSERT OR IGNORE INTO timeslots (id, label, capacity, booked) VALUES
-    ('slot_1000', '10:00 - 10:30', 10, 0),
-    ('slot_1030', '10:30 - 11:00', 10, 0),
-    ('slot_1100', '11:00 - 11:30', 10, 0),
-    ('slot_1130', '11:30 - 12:00', 10, 0),
-    ('slot_1200', '12:00 - 12:30', 10, 0),
-    ('slot_1230', '12:30 - 13:00', 10, 0),
-    ('slot_1300', '13:00 - 13:30', 10, 0),
-    ('slot_1330', '13:30 - 14:00', 10, 0),
-    ('slot_1400', '14:00 - 14:30', 10, 0),
-    ('slot_1430', '14:30 - 15:00', 10, 0),
-    ('slot_1500', '15:00 - 15:30', 10, 0),
-    ('slot_1530', '15:30 - 16:00', 10, 0),
-    ('slot_1600', '16:00 - 16:30', 10, 0),
-    ('slot_1630', '16:30 - 17:00', 10, 0),
-    ('slot_1700', '17:00 - 17:30', 10, 0),
-    ('slot_1730', '17:30 - 18:00', 10, 0);
+    ('slot_1000', '10:00 - 10:30', 150, 0),
+    ('slot_1030', '10:30 - 11:00', 150, 0),
+    ('slot_1100', '11:00 - 11:30', 150, 0),
+    ('slot_1130', '11:30 - 12:00', 150, 0),
+    ('slot_1200', '12:00 - 12:30', 150, 0),
+    ('slot_1230', '12:30 - 13:00', 150, 0),
+    ('slot_1300', '13:00 - 13:30', 150, 0),
+    ('slot_1330', '13:30 - 14:00', 150, 0),
+    ('slot_1400', '14:00 - 14:30', 150, 0),
+    ('slot_1430', '14:30 - 15:00', 150, 0),
+    ('slot_1500', '15:00 - 15:30', 150, 0),
+    ('slot_1530', '15:30 - 16:00', 150, 0),
+    ('slot_1600', '16:00 - 16:30', 150, 0),
+    ('slot_1630', '16:30 - 17:00', 150, 0),
+    ('slot_1700', '17:00 - 17:30', 150, 0),
+    ('slot_1730', '17:30 - 18:00', 150, 0);
 
 -- Create index for faster order lookups
 CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number);

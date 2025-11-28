@@ -27,6 +27,14 @@ function calculateTotal(products) {
     return Math.round(total * 100) / 100;
 }
 
+function calculateTotalItems(products) {
+    let total = 0;
+    for (const qty of Object.values(products)) {
+        total += qty || 0;
+    }
+    return total;
+}
+
 // GET /api/orders
 export async function onRequestGet(context) {
     const { env } = context;
@@ -63,8 +71,35 @@ export async function onRequestPost(context) {
 
     const orderNumber = generateOrderNumber();
     const total = data.total || calculateTotal(data.products);
+    const totalItems = calculateTotalItems(data.products);
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${orderNumber}`;
     const createdAt = new Date().toISOString();
+
+    // Check capacity before placing order
+    try {
+        const { results } = await env.DB.prepare(
+            `SELECT capacity, booked FROM timeslots WHERE id = ?`
+        ).bind(data.timeslot).all();
+
+        if (results.length === 0) {
+            return Response.json({ error: 'Tijdslot niet gevonden' }, { status: 400 });
+        }
+
+        const slot = results[0];
+        const available = slot.capacity - (slot.booked || 0);
+
+        if (totalItems > available) {
+            return Response.json({
+                error: 'Onvoldoende capaciteit',
+                message: `Er zijn nog maar ${available} stuks beschikbaar in dit tijdslot. Je bestelling is ${totalItems} stuks.`,
+                available: available,
+                requested: totalItems
+            }, { status: 400 });
+        }
+    } catch (error) {
+        console.error('Capacity check error:', error);
+        return Response.json({ error: 'Database error', details: error.message }, { status: 500 });
+    }
 
     // Save to database
     try {
@@ -82,10 +117,10 @@ export async function onRequestPost(context) {
             createdAt
         ).run();
 
-        // Update timeslot booked count
+        // Update timeslot booked count (add total items, not just 1)
         await env.DB.prepare(
-            `UPDATE timeslots SET booked = booked + 1 WHERE id = ?`
-        ).bind(data.timeslot).run();
+            `UPDATE timeslots SET booked = booked + ? WHERE id = ?`
+        ).bind(totalItems, data.timeslot).run();
 
     } catch (error) {
         console.error('Database error:', error);
