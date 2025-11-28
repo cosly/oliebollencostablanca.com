@@ -102,13 +102,13 @@ async function generatePendingToken(email, code, env) {
     const timestamp = Date.now();
     const data = `${email}:${code}:${timestamp}`;
     const signature = await createHmac(data, env.ADMIN_SECRET || 'default-secret');
-    return Buffer.from(JSON.stringify({ email, code, timestamp, signature })).toString('base64');
+    return btoa(JSON.stringify({ email, code, timestamp, signature }));
 }
 
 // Verify pending token and code
 async function verifyPendingToken(pendingToken, submittedCode, env) {
     try {
-        const decoded = JSON.parse(Buffer.from(pendingToken, 'base64').toString());
+        const decoded = JSON.parse(atob(pendingToken));
         const { email, code, timestamp, signature } = decoded;
 
         // Check expiry
@@ -139,7 +139,7 @@ async function generateSessionToken(email, env) {
     const sessionId = crypto.randomUUID();
     const data = `${email}:${sessionId}:${timestamp}`;
     const signature = await createHmac(data, env.ADMIN_SECRET || 'default-secret');
-    return Buffer.from(JSON.stringify({ email, sessionId, timestamp, signature })).toString('base64');
+    return btoa(JSON.stringify({ email, sessionId, timestamp, signature }));
 }
 
 // Validate session token
@@ -147,7 +147,7 @@ async function validateSessionToken(token, env) {
     if (!token) return { valid: false };
 
     try {
-        const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
+        const decoded = JSON.parse(atob(token));
         const { email, sessionId, timestamp, signature } = decoded;
 
         // Check expiry
@@ -205,8 +205,13 @@ export default {
             return handleWebSocket(request, env, orderNumber);
         }
 
-        // Let Cloudflare handle static assets
-        return env.ASSETS.fetch(request);
+        // Serve static assets
+        if (env.ASSETS) {
+            return env.ASSETS.fetch(request);
+        }
+
+        // Fallback for local dev without ASSETS binding
+        return new Response('Not found', { status: 404 });
     }
 };
 
@@ -230,10 +235,12 @@ async function handleAPI(request, env, ctx, path) {
         // Check authentication for admin routes
         const requiresAuth = ADMIN_ROUTES.some(route => path.startsWith(route));
         if (requiresAuth) {
-            // Allow public order creation (customers creating orders)
-            const isPublicOrderCreation = path === '/api/orders' && request.method === 'POST';
+            // Allow public routes (customers need these)
+            const isPublicRoute =
+                (path === '/api/orders' && request.method === 'POST') ||  // Create order
+                (path === '/api/timeslots' && request.method === 'GET');  // View timeslots
 
-            if (!isPublicOrderCreation && !(await isAuthenticated(request, env))) {
+            if (!isPublicRoute && !(await isAuthenticated(request, env))) {
                 return Response.json(
                     { error: 'Unauthorized', message: 'Authenticatie vereist' },
                     { status: 401, headers: corsHeaders(request) }
@@ -282,6 +289,11 @@ async function handleAPI(request, env, ctx, path) {
         // POST /api/timeslots/capacity
         if (path === '/api/timeslots/capacity' && request.method === 'POST') {
             return await updateCapacity(request, env);
+        }
+
+        // POST /api/product-capacity
+        if (path === '/api/product-capacity' && request.method === 'POST') {
+            return await updateProductCapacity(request, env);
         }
 
         return Response.json({ error: 'Not found' }, { status: 404, headers: corsHeaders(request) });
@@ -380,25 +392,53 @@ async function createOrder(request, env, ctx) {
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${orderNumber}`;
     const createdAt = new Date().toISOString();
 
-    // Check capacity
-    const { results } = await env.DB.prepare(
-        `SELECT capacity, booked FROM timeslots WHERE id = ?`
+    // Check capacity per product
+    // First get the hour_block for this timeslot
+    const { results: slotResults } = await env.DB.prepare(
+        `SELECT hour_block FROM timeslots WHERE id = ?`
     ).bind(data.timeslot).all();
 
-    if (results.length === 0) {
+    if (slotResults.length === 0) {
         return Response.json({ error: 'Tijdslot niet gevonden' }, { status: 400, headers: corsHeaders(request) });
     }
 
-    const slot = results[0];
-    const available = slot.capacity - (slot.booked || 0);
+    const hourBlock = slotResults[0].hour_block;
 
-    if (totalItems > available) {
-        return Response.json({
-            error: 'Onvoldoende capaciteit',
-            message: `Er zijn nog maar ${available} stuks beschikbaar in dit tijdslot. Je bestelling is ${totalItems} stuks.`,
-            available: available,
-            requested: totalItems
-        }, { status: 400, headers: corsHeaders(request) });
+    // Check capacity for each product
+    for (const [productId, quantity] of Object.entries(data.products)) {
+        if (quantity <= 0) continue;
+
+        const { results: capacityResults } = await env.DB.prepare(
+            `SELECT capacity, booked FROM product_capacity WHERE hour_block = ? AND product_id = ?`
+        ).bind(hourBlock, productId).all();
+
+        if (capacityResults.length === 0) {
+            return Response.json({
+                error: 'Product capaciteit niet geconfigureerd',
+                product: productId,
+                hourBlock
+            }, { status: 400, headers: corsHeaders(request) });
+        }
+
+        const productCapacity = capacityResults[0];
+        const available = productCapacity.capacity - (productCapacity.booked || 0);
+
+        if (quantity > available) {
+            const productNames = {
+                'oliebol_krenten': 'Oliebollen met krenten',
+                'oliebol_naturel': 'Oliebollen zonder krenten',
+                'appelbeignet': 'Appelbeignets'
+            };
+
+            return Response.json({
+                error: 'Onvoldoende capaciteit',
+                message: `Er zijn nog maar ${available} ${productNames[productId]} beschikbaar in dit uur. Je bestelling is ${quantity} stuks.`,
+                available: available,
+                requested: quantity,
+                product: productId,
+                hourBlock
+            }, { status: 400, headers: corsHeaders(request) });
+        }
     }
 
     // Save to database
@@ -416,15 +456,17 @@ async function createOrder(request, env, ctx) {
         createdAt
     ).run();
 
-    // Update timeslot booked count
-    await env.DB.prepare(
-        `UPDATE timeslots SET booked = booked + ? WHERE id = ?`
-    ).bind(totalItems, data.timeslot).run();
+    // Update product capacity booked counts
+    for (const [productId, quantity] of Object.entries(data.products)) {
+        if (quantity <= 0) continue;
 
-    // Send confirmation email
-    if (env.RESEND_API_KEY) {
-        ctx.waitUntil(sendConfirmationEmail(env, data.customer, orderNumber, data, total));
+        await env.DB.prepare(
+            `UPDATE product_capacity SET booked = booked + ? WHERE hour_block = ? AND product_id = ?`
+        ).bind(quantity, hourBlock, productId).run();
     }
+
+    // Send confirmation email (works with both Mailpit and Resend)
+    ctx.waitUntil(sendConfirmationEmail(env, data.customer, orderNumber, data, total));
 
     return Response.json({ orderNumber, qrCode: qrCodeUrl, total }, { headers: corsHeaders(request) });
 }
@@ -459,18 +501,35 @@ async function markNoshow(request, env, orderNumber) {
 // Timeslots API
 // =====================
 async function getTimeslots(request, env) {
-    const { results } = await env.DB.prepare(
+    const { results: timeslots } = await env.DB.prepare(
         `SELECT * FROM timeslots ORDER BY id`
     ).all();
 
-    const slots = results.map(slot => ({
+    // Get all product capacities
+    const { results: capacities } = await env.DB.prepare(
+        `SELECT * FROM product_capacity`
+    ).all();
+
+    // Group capacities by hour_block
+    const capacityByHour = {};
+    for (const cap of capacities) {
+        if (!capacityByHour[cap.hour_block]) {
+            capacityByHour[cap.hour_block] = {};
+        }
+        capacityByHour[cap.hour_block][cap.product_id] = {
+            capacity: cap.capacity,
+            booked: cap.booked || 0,
+            available: cap.capacity - (cap.booked || 0)
+        };
+    }
+
+    const slots = timeslots.map(slot => ({
         id: slot.id,
         start: slot.start_time,
         end: slot.end_time,
         label: `${slot.start_time} - ${slot.end_time}`,
-        capacity: slot.capacity,
-        booked: slot.booked || 0,
-        available: slot.capacity - (slot.booked || 0)
+        hourBlock: slot.hour_block,
+        products: capacityByHour[slot.hour_block] || {}
     }));
 
     return Response.json(slots, { headers: corsHeaders(request) });
@@ -502,6 +561,18 @@ async function updateCapacity(request, env) {
     return Response.json({ success: true }, { headers: corsHeaders(request) });
 }
 
+async function updateProductCapacity(request, env) {
+    const updates = await request.json();
+
+    for (const update of updates) {
+        await env.DB.prepare(
+            `UPDATE product_capacity SET capacity = ? WHERE hour_block = ? AND product_id = ?`
+        ).bind(update.capacity, update.hourBlock, update.productId).run();
+    }
+
+    return Response.json({ success: true }, { headers: corsHeaders(request) });
+}
+
 // =====================
 // Authentication
 // =====================
@@ -525,12 +596,8 @@ async function handleRequestCode(request, env) {
     // Generate pending token
     const pendingToken = await generatePendingToken(email, code, env);
 
-    // Send code via email
-    if (env.RESEND_API_KEY) {
-        await sendLoginCodeEmail(env, email, code);
-    } else {
-        console.log('Login code (no email configured):', code);
-    }
+    // Send code via email (works with both Mailpit and Resend)
+    await sendLoginCodeEmail(env, email, code);
 
     return Response.json(
         { success: true, pendingToken, message: 'Code verstuurd naar je email' },
@@ -595,6 +662,48 @@ async function handleVerifySession(request, env) {
     );
 }
 
+// Send email via Resend or local proxy for development
+async function sendEmail(env, { from, to, subject, html }) {
+    // For local development, use email proxy that forwards to Mailpit
+    if (env.ENVIRONMENT === 'development' || !env.RESEND_API_KEY) {
+        try {
+            await fetch('http://127.0.0.1:8026/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ from, to, subject, html })
+            });
+            console.log(`📧 Email sent to ${to} via proxy → Mailpit (http://localhost:8025)`);
+        } catch (error) {
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('⚠️  Email proxy not running! Start it with:');
+            console.log('   node scripts/email-proxy.js');
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('📧 EMAIL (would be sent):');
+            console.log(`From: ${from}`);
+            console.log(`To: ${to}`);
+            console.log(`Subject: ${subject}`);
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        }
+        return;
+    }
+
+    // Use Resend for production
+    try {
+        await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ from, to, subject, html })
+        });
+    } catch (error) {
+        console.error('Resend email error:', error);
+    }
+}
+
 // Send login code email
 async function sendLoginCodeEmail(env, email, code) {
     const emailHtml = `
@@ -625,23 +734,12 @@ async function sendLoginCodeEmail(env, email, code) {
 </body>
 </html>`;
 
-    try {
-        await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                from: 'Oliebollen Costa Blanca <noreply@oliebollencostablanca.com>',
-                to: email,
-                subject: `Je login code: ${code}`,
-                html: emailHtml
-            })
-        });
-    } catch (error) {
-        console.error('Login code email error:', error);
-    }
+    await sendEmail(env, {
+        from: 'Oliebollen Costa Blanca <noreply@oliebollencostablanca.com>',
+        to: email,
+        subject: `Je login code: ${code}`,
+        html: emailHtml
+    });
 }
 
 // =====================
@@ -649,7 +747,10 @@ async function sendLoginCodeEmail(env, email, code) {
 // =====================
 async function sendConfirmationEmail(env, customer, orderNumber, orderData, total) {
     // Link to order page instead of embedding QR
-    const orderPageUrl = `https://oliebollencostablanca.com/order.html?id=${orderNumber}`;
+    const baseUrl = env.ENVIRONMENT === 'development'
+        ? 'http://localhost:8080'
+        : 'https://oliebollencostablanca.com';
+    const orderPageUrl = `${baseUrl}/order.html?id=${orderNumber}`;
 
     let productsHtml = '';
     for (const [product, qty] of Object.entries(orderData.products)) {
@@ -722,21 +823,10 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
 </body>
 </html>`;
 
-    try {
-        await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                from: 'Oliebollen Costa Blanca <bestelling@oliebollencostablanca.com>',
-                to: customer.email,
-                subject: `Je oliebollen bestelling ${orderNumber}`,
-                html: emailHtml
-            })
-        });
-    } catch (error) {
-        console.error('Email error:', error);
-    }
+    await sendEmail(env, {
+        from: 'Oliebollen Costa Blanca <bestelling@oliebollencostablanca.com>',
+        to: customer.email,
+        subject: `Je oliebollen bestelling ${orderNumber}`,
+        html: emailHtml
+    });
 }

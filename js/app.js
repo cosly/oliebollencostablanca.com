@@ -287,26 +287,53 @@ function renderTimeslots(timeslots) {
     const grid = document.getElementById('timeslotGrid');
     grid.innerHTML = '';
 
-    const orderQuantity = getTotalItems();
+    // Group timeslots by hour for displaying capacity bars
+    const slotsByHour = {};
+    timeslots.forEach(slot => {
+        if (!slotsByHour[slot.hourBlock]) {
+            slotsByHour[slot.hourBlock] = [];
+        }
+        slotsByHour[slot.hourBlock].push(slot);
+    });
 
     timeslots.forEach(slot => {
         const div = document.createElement('div');
-        // Slot is unavailable if no capacity OR if order quantity exceeds available
-        const hasEnoughCapacity = slot.available >= orderQuantity && orderQuantity > 0;
-        const isUnavailable = slot.available === 0 || (orderQuantity > 0 && !hasEnoughCapacity);
+
+        // Check if each product has enough capacity
+        let hasEnoughCapacity = true;
+        let unavailableProducts = [];
+
+        for (const [productId, quantity] of Object.entries(orderData.products)) {
+            if (quantity > 0) {
+                const productCap = slot.products[productId];
+                if (!productCap || productCap.available < quantity) {
+                    hasEnoughCapacity = false;
+                    unavailableProducts.push(productId);
+                }
+            }
+        }
+
+        const isUnavailable = !hasEnoughCapacity;
 
         div.className = 'timeslot' + (isUnavailable ? ' unavailable' : '');
         div.dataset.slotId = slot.id;
         div.dataset.slotLabel = slot.label;
 
-        // Show availability status
-        let availText;
-        if (slot.available === 0) {
-            availText = 'Vol!';
-        } else if (orderQuantity > 0 && !hasEnoughCapacity) {
-            availText = `${slot.available} stuks (te weinig)`;
+        // Show availability per product
+        let availText = '';
+        if (isUnavailable && unavailableProducts.length > 0) {
+            availText = 'Te weinig beschikbaar';
         } else {
-            availText = `${slot.available} stuks`;
+            // Show mini capacity indicators
+            const krenten = slot.products['oliebol_krenten'];
+            const naturel = slot.products['oliebol_naturel'];
+            const appel = slot.products['appelbeignet'];
+
+            availText = `<div class="product-avail">
+                <span style="color: #ff6b6b">K: ${krenten ? krenten.available : 0}</span>
+                <span style="color: #4ecdc4">N: ${naturel ? naturel.available : 0}</span>
+                <span style="color: #ffe66d">A: ${appel ? appel.available : 0}</span>
+            </div>`;
         }
 
         div.innerHTML = `
@@ -324,7 +351,21 @@ function renderTimeslots(timeslots) {
     // Re-check if selected timeslot is still valid
     if (selectedTimeslot) {
         const stillValid = timeslots.find(s => s.id === selectedTimeslot.id);
-        if (stillValid && stillValid.available >= orderQuantity) {
+        let hasCapacity = true;
+
+        if (stillValid) {
+            for (const [productId, quantity] of Object.entries(orderData.products)) {
+                if (quantity > 0) {
+                    const productCap = stillValid.products[productId];
+                    if (!productCap || productCap.available < quantity) {
+                        hasCapacity = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (stillValid && hasCapacity) {
             // Re-select the slot visually
             const selectedEl = grid.querySelector(`[data-slot-id="${selectedTimeslot.id}"]`);
             if (selectedEl && !selectedEl.classList.contains('unavailable')) {

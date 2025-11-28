@@ -893,52 +893,129 @@ function calculateBookedItems(slotId) {
 function renderCapacityList() {
     const container = document.getElementById('capacityList');
 
-    container.innerHTML = timeslots.map(slot => {
-        // Use booked from API (total items), or calculate from orders if not available
-        const booked = slot.booked !== undefined ? slot.booked : calculateBookedItems(slot.id);
-        const percentage = slot.capacity > 0 ? (booked / slot.capacity) * 100 : 0;
-        const fillClass = percentage >= 100 ? 'full' : percentage >= 80 ? 'warning' : '';
-        const orderCount = orders.filter(o => o.timeslot === slot.id).length;
+    // Get first slot to read global capacity
+    const firstSlot = timeslots[0];
+    const products = firstSlot?.products || {};
+    const krenten = products['oliebol_krenten'] || { capacity: 0, booked: 0, available: 0 };
+    const naturel = products['oliebol_naturel'] || { capacity: 0, booked: 0, available: 0 };
+    const appel = products['appelbeignet'] || { capacity: 0, booked: 0, available: 0 };
+
+    // Calculate total booked across all timeslots
+    const totalKrenten = orders.reduce((sum, o) => sum + (o.products.oliebol_krenten || 0), 0);
+    const totalNaturel = orders.reduce((sum, o) => sum + (o.products.oliebol_naturel || 0), 0);
+    const totalAppel = orders.reduce((sum, o) => sum + (o.products.appelbeignet || 0), 0);
+
+    // Render global capacity inputs (eenmalig bovenaan)
+    const globalInputs = `
+        <div class="global-capacity">
+            <h3>Capaciteit per uur (geldt voor alle tijden)</h3>
+            <div class="capacity-inputs">
+                <div class="capacity-input-row">
+                    <span class="product-label" style="color: #ff6b6b">⬤ Krenten</span>
+                    <input type="number" class="global-capacity-input" value="${krenten.capacity}"
+                           min="0" max="500" data-product="oliebol_krenten">
+                    <span class="capacity-unit">stuks/uur → ${Math.round(krenten.capacity / 2)}/half uur</span>
+                </div>
+                <div class="capacity-input-row">
+                    <span class="product-label" style="color: #4ecdc4">⬤ Naturel</span>
+                    <input type="number" class="global-capacity-input" value="${naturel.capacity}"
+                           min="0" max="500" data-product="oliebol_naturel">
+                    <span class="capacity-unit">stuks/uur → ${Math.round(naturel.capacity / 2)}/half uur</span>
+                </div>
+                <div class="capacity-input-row">
+                    <span class="product-label" style="color: #ffe66d">⬤ Appel</span>
+                    <input type="number" class="global-capacity-input" value="${appel.capacity}"
+                           min="0" max="500" data-product="appelbeignet">
+                    <span class="capacity-unit">stuks/uur → ${Math.round(appel.capacity / 2)}/half uur</span>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="saveCapacityBtn" style="width: 100%; margin-top: 16px;">
+                Opslaan
+            </button>
+            <div class="total-stats">
+                Totaal geboekt vandaag: <span style="color: #ff6b6b">${totalKrenten} krenten</span>,
+                <span style="color: #4ecdc4">${totalNaturel} naturel</span>,
+                <span style="color: #ffe66d">${totalAppel} appel</span>
+            </div>
+        </div>
+        <h3 style="margin-bottom: 16px; color: var(--secondary);">Bezetting per tijdslot</h3>
+    `;
+
+    // Render bars per tijdslot (gewoon alle tijdsloten achter elkaar)
+    const timeslotBars = timeslots.map(slot => {
+        // Calculate booked per product for THIS specific timeslot
+        const slotOrders = orders.filter(o => o.timeslot === slot.id);
+        const slotKrenten = slotOrders.reduce((sum, o) => sum + (o.products.oliebol_krenten || 0), 0);
+        const slotNaturel = slotOrders.reduce((sum, o) => sum + (o.products.oliebol_naturel || 0), 0);
+        const slotAppel = slotOrders.reduce((sum, o) => sum + (o.products.appelbeignet || 0), 0);
+
+        // Half-hour capacity = hour capacity / 2
+        const halfHourKrenten = krenten.capacity / 2;
+        const halfHourNaturel = naturel.capacity / 2;
+        const halfHourAppel = appel.capacity / 2;
+
+        // Percentages based on HALF-HOUR capacity
+        const krentenPct = halfHourKrenten > 0 ? (slotKrenten / halfHourKrenten) * 100 : 0;
+        const naturelPct = halfHourNaturel > 0 ? (slotNaturel / halfHourNaturel) * 100 : 0;
+        const appelPct = halfHourAppel > 0 ? (slotAppel / halfHourAppel) * 100 : 0;
+
+        const orderCount = slotOrders.length;
 
         return `
-            <div class="capacity-item" data-slot="${slot.id}">
-                <span class="capacity-time">${slot.start}</span>
-                <div class="capacity-bar">
-                    <div class="capacity-fill ${fillClass}" style="width: ${Math.min(percentage, 100)}%"></div>
+            <div class="timeslot-bars">
+                <div class="timeslot-header">
+                    <div class="timeslot-time">${slot.label}</div>
+                    <div class="timeslot-orders">${orderCount} ${orderCount === 1 ? 'bestelling' : 'bestellingen'}</div>
                 </div>
-                <span class="capacity-booked" title="${orderCount} bestellingen">${booked}/${slot.capacity} stuks</span>
-                <input type="number" class="capacity-input" value="${slot.capacity}"
-                       min="0" max="500" data-slot="${slot.id}">
+                <div class="product-bars">
+                    <div class="product-bar-row">
+                        <div class="capacity-bar">
+                            <div class="capacity-fill" style="width: ${Math.min(krentenPct, 100)}%; background-color: #ff6b6b"></div>
+                        </div>
+                        <span class="bar-label">${slotKrenten}/${Math.round(halfHourKrenten)}</span>
+                    </div>
+                    <div class="product-bar-row">
+                        <div class="capacity-bar">
+                            <div class="capacity-fill" style="width: ${Math.min(naturelPct, 100)}%; background-color: #4ecdc4"></div>
+                        </div>
+                        <span class="bar-label">${slotNaturel}/${Math.round(halfHourNaturel)}</span>
+                    </div>
+                    <div class="product-bar-row">
+                        <div class="capacity-bar">
+                            <div class="capacity-fill" style="width: ${Math.min(appelPct, 100)}%; background-color: #ffe66d"></div>
+                        </div>
+                        <span class="bar-label">${slotAppel}/${Math.round(halfHourAppel)}</span>
+                    </div>
+                </div>
             </div>
         `;
     }).join('');
 
-    // Bulk set capacity
-    document.getElementById('setAllCapacity').addEventListener('click', () => {
-        const bulkValue = document.getElementById('bulkCapacity').value;
-        container.querySelectorAll('.capacity-input').forEach(input => {
-            input.value = bulkValue;
+    container.innerHTML = globalInputs + '<div class="timeslots-list">' + timeslotBars + '</div>';
+
+    // Save capacity handler
+    document.getElementById('saveCapacityBtn')?.addEventListener('click', saveGlobalCapacity);
+}
+
+async function saveGlobalCapacity() {
+    const updates = [];
+
+    // Get all unique hour blocks from timeslots
+    const hourBlocks = [...new Set(timeslots.map(slot => slot.hourBlock))];
+
+    // For each product, update capacity for ALL hour blocks
+    document.querySelectorAll('.global-capacity-input').forEach(input => {
+        const productId = input.dataset.product;
+        const capacity = parseInt(input.value) || 0;
+
+        // Apply this capacity to every hour block
+        hourBlocks.forEach(hourBlock => {
+            updates.push({ hourBlock, productId, capacity });
         });
     });
 
-    // Save capacity
-    document.getElementById('saveCapacity').addEventListener('click', saveCapacity);
-}
-
-async function saveCapacity() {
-    const updates = [];
-    document.querySelectorAll('.capacity-input').forEach(input => {
-        const slotId = input.dataset.slot;
-        const capacity = parseInt(input.value) || 0;
-        updates.push({ id: slotId, capacity });
-
-        // Update local state
-        const slot = timeslots.find(s => s.id === slotId);
-        if (slot) slot.capacity = capacity;
-    });
-
     try {
-        await fetch(`${API_BASE}/timeslots/capacity`, {
+        await fetch(`${API_BASE}/product-capacity`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -946,23 +1023,21 @@ async function saveCapacity() {
             },
             body: JSON.stringify(updates)
         });
+
+        alert('Capaciteit opgeslagen!');
+        // Reload timeslots to get updated data
+        await loadTimeslots();
+        renderCapacityList();
     } catch (e) {
-        console.log('API niet beschikbaar, lokaal opgeslagen');
+        console.error('Fout bij opslaan capaciteit:', e);
+        alert('Er is een fout opgetreden bij het opslaan');
     }
-
-    // Save locally
-    localStorage.setItem('timeslots', JSON.stringify(timeslots));
-
-    alert('Capaciteit opgeslagen!');
-    renderCapacityList();
 }
 
 function initCapacity() {
-    // Load from localStorage if available
-    const savedTimeslots = localStorage.getItem('timeslots');
-    if (savedTimeslots) {
-        timeslots = JSON.parse(savedTimeslots);
-    }
+    // Clear old localStorage data (oude structuur zonder hourBlock)
+    localStorage.removeItem('timeslots');
+    // Data wordt nu altijd from API geladen
 }
 
 // =====================

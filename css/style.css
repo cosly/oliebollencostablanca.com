@@ -1165,6 +1165,133 @@ footer p {
     background: var(--danger);
 }
 
+/* Global Capacity Section */
+.global-capacity {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+}
+
+.global-capacity h3 {
+    margin: 0 0 20px 0;
+    font-size: 1.1rem;
+    color: var(--secondary);
+}
+
+.capacity-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.capacity-input-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--gray-50);
+    border-radius: var(--radius-sm);
+}
+
+.product-label {
+    font-size: 1rem;
+    font-weight: 600;
+    min-width: 90px;
+}
+
+.global-capacity-input {
+    width: 100px;
+    padding: 10px 12px;
+    border: 2px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.global-capacity-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.capacity-unit {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    flex: 1;
+}
+
+.total-stats {
+    padding: 12px;
+    background: var(--gray-100);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    color: var(--gray-700);
+    margin-top: 16px;
+}
+
+.timeslots-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.timeslot-bars {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+}
+
+.timeslot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.timeslot-time {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--secondary);
+}
+
+.timeslot-orders {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.product-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.product-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.product-bar-row .capacity-bar {
+    flex: 1;
+    height: 12px;
+    margin: 0;
+}
+
+.bar-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    min-width: 50px;
+    text-align: right;
+}
+
 /* Tablet improvements */
 @media (min-width: 600px) {
     .container {

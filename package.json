@@ -3,16 +3,22 @@
   "version": "1.0.0",
   "description": "Oliebollen bestelsite voor Costa Blanca",
   "scripts": {
-    "dev": "wrangler pages dev . --port 8080",
-    "deploy": "wrangler pages deploy .",
+    "dev": "wrangler dev --port 8080",
+    "dev:pages": "wrangler pages dev . --port 8080 --binding ENVIRONMENT=development",
+    "deploy": "wrangler pages deploy . --project-name oliebollencostablanca-com",
     "db:create": "wrangler d1 create oliebollen-db",
-    "db:init": "wrangler d1 execute oliebollen-db --file=./api/schema.sql",
-    "db:init:local": "wrangler d1 execute oliebollen-db --local --file=./api/schema.sql"
+    "db:init": "wrangler d1 execute oliebollen-db --file=./schema.sql",
+    "db:init:local": "wrangler d1 execute oliebollen-db --local --file=./schema.sql"
   },
-  "keywords": ["oliebollen", "costa-blanca", "cloudflare"],
+  "keywords": [
+    "oliebollen",
+    "costa-blanca",
+    "cloudflare"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "wrangler": "^3.0.0"
+    "nodemailer": "^7.0.11",
+    "wrangler": "^4.51.0"
   }
 }
