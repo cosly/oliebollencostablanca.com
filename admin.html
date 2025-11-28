@@ -20,20 +20,16 @@
                 <p>Admin Panel</p>
             </div>
 
-            <!-- Step 1: Email input -->
-            <form id="emailForm" class="login-form">
-                <div class="form-group">
-                    <label for="adminEmail">Email adres</label>
-                    <input type="email" id="adminEmail" name="email" required
-                           placeholder="admin@example.com" autocomplete="email">
-                </div>
-                <button type="submit" class="btn btn-primary btn-login">Verstuur code</button>
-                <p id="emailError" class="login-error" style="display: none;"></p>
-            </form>
+            <!-- Step 1: Request code -->
+            <div id="requestCodeForm" class="login-form">
+                <p class="login-info">Klik om een login code te ontvangen per email.</p>
+                <button type="button" id="requestCodeBtn" class="btn btn-primary btn-login">Stuur login code</button>
+                <p id="requestError" class="login-error" style="display: none;"></p>
+            </div>
 
             <!-- Step 2: Token input (hidden initially) -->
             <form id="tokenForm" class="login-form" style="display: none;">
-                <p class="token-info">We hebben een 6-cijferige code gestuurd naar:<br><strong id="sentToEmail"></strong></p>
+                <p class="token-info">We hebben een 6-cijferige code naar je email gestuurd.</p>
                 <div class="form-group">
                     <label for="loginToken">Verificatie code</label>
                     <input type="text" id="loginToken" name="token" required
@@ -41,7 +37,7 @@
                            inputmode="numeric" autocomplete="one-time-code">
                 </div>
                 <button type="submit" class="btn btn-primary btn-login">Inloggen</button>
-                <button type="button" id="backToEmail" class="btn btn-secondary btn-back">Ander email adres</button>
+                <button type="button" id="backToRequest" class="btn btn-secondary btn-back">Nieuwe code aanvragen</button>
                 <p id="tokenError" class="login-error" style="display: none;"></p>
             </form>
         </div>

@@ -84,14 +84,13 @@ async function checkAuth() {
 function showLoginStep1() {
     document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('adminContent').style.display = 'none';
-    document.getElementById('emailForm').style.display = 'block';
+    document.getElementById('requestCodeForm').style.display = 'block';
     document.getElementById('tokenForm').style.display = 'none';
 }
 
-function showLoginStep2(email) {
-    document.getElementById('emailForm').style.display = 'none';
+function showLoginStep2() {
+    document.getElementById('requestCodeForm').style.display = 'none';
     document.getElementById('tokenForm').style.display = 'block';
-    document.getElementById('sentToEmail').textContent = email;
     document.getElementById('loginToken').value = '';
     document.getElementById('loginToken').focus();
 }
@@ -101,30 +100,27 @@ function showAdmin() {
     document.getElementById('adminContent').style.display = 'block';
 }
 
-// Step 1: Request code via email
-async function handleEmailSubmit(e) {
-    e.preventDefault();
-
-    const email = document.getElementById('adminEmail').value.trim();
-    const errorEl = document.getElementById('emailError');
-    const submitBtn = e.target.querySelector('button[type="submit"]');
+// Step 1: Request login code (button click)
+async function handleRequestCode() {
+    const errorEl = document.getElementById('requestError');
+    const btn = document.getElementById('requestCodeBtn');
 
     errorEl.style.display = 'none';
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Verzenden...';
+    btn.disabled = true;
+    btn.textContent = 'Verzenden...';
 
     try {
         const response = await fetch(`${API_BASE}/auth/request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
+            body: JSON.stringify({})
         });
 
         const data = await response.json();
 
         if (response.ok && data.pendingToken) {
             pendingToken = data.pendingToken;
-            showLoginStep2(email);
+            showLoginStep2();
         } else {
             errorEl.textContent = data.message || 'Kon geen code versturen';
             errorEl.style.display = 'block';
@@ -134,8 +130,8 @@ async function handleEmailSubmit(e) {
         errorEl.style.display = 'block';
     }
 
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Verstuur code';
+    btn.disabled = false;
+    btn.textContent = 'Stuur login code';
 }
 
 // Step 2: Verify the code
@@ -178,7 +174,7 @@ async function handleTokenSubmit(e) {
     submitBtn.textContent = 'Inloggen';
 }
 
-function handleBackToEmail() {
+function handleBackToRequest() {
     pendingToken = null;
     showLoginStep1();
 }
@@ -187,17 +183,16 @@ function handleLogout() {
     localStorage.removeItem(SESSION_KEY);
     authToken = null;
     pendingToken = null;
-    document.getElementById('adminEmail').value = '';
     document.getElementById('loginToken').value = '';
     showLoginStep1();
 }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-    // Setup login forms
-    document.getElementById('emailForm').addEventListener('submit', handleEmailSubmit);
+    // Setup login handlers
+    document.getElementById('requestCodeBtn').addEventListener('click', handleRequestCode);
     document.getElementById('tokenForm').addEventListener('submit', handleTokenSubmit);
-    document.getElementById('backToEmail').addEventListener('click', handleBackToEmail);
+    document.getElementById('backToRequest').addEventListener('click', handleBackToRequest);
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 
     // Check authentication

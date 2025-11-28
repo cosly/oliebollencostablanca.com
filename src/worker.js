@@ -506,33 +506,18 @@ async function updateCapacity(request, env) {
 // Authentication
 // =====================
 
-// Step 1: Request login code via email
+// Step 1: Request login code (sent to ADMIN_EMAIL)
 async function handleRequestCode(request, env) {
-    const data = await request.json();
-    const { email } = data;
-
-    if (!email) {
-        return Response.json(
-            { error: 'Email required', message: 'Email is verplicht' },
-            { status: 400, headers: corsHeaders(request) }
-        );
-    }
-
-    // Check if email is allowed (must match ADMIN_EMAIL)
+    // Check if ADMIN_EMAIL is configured
     if (!env.ADMIN_EMAIL) {
         console.error('ADMIN_EMAIL not configured');
         return Response.json(
-            { error: 'Server configuration error' },
+            { error: 'Server configuration error', message: 'Admin email niet geconfigureerd' },
             { status: 500, headers: corsHeaders(request) }
         );
     }
 
-    if (email.toLowerCase() !== env.ADMIN_EMAIL.toLowerCase()) {
-        return Response.json(
-            { error: 'Unauthorized', message: 'Dit email adres heeft geen toegang' },
-            { status: 403, headers: corsHeaders(request) }
-        );
-    }
+    const email = env.ADMIN_EMAIL;
 
     // Generate login code
     const code = generateLoginCode();
