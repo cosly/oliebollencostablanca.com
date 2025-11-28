@@ -330,9 +330,9 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
         if (qty > 0) {
             const subtotal = qty * PRICES[product];
             productsHtml += `<tr>
-                <td style="padding:8px;border-bottom:1px solid #eee">${qty}x</td>
-                <td style="padding:8px;border-bottom:1px solid #eee">${PRODUCT_NAMES[product]}</td>
-                <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">EUR ${subtotal.toFixed(2).replace('.', ',')}</td>
+                <td style="padding:6px 4px;border-bottom:1px solid #eee">${qty}x</td>
+                <td style="padding:6px 4px;border-bottom:1px solid #eee">${PRODUCT_NAMES[product]}</td>
+                <td style="padding:6px 4px;border-bottom:1px solid #eee;text-align:right;white-space:nowrap">${subtotal.toFixed(2).replace('.', ',')},-</td>
             </tr>`;
         }
     }
@@ -340,54 +340,57 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
     const emailHtml = `
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"></head>
-<body style="font-family:Arial,sans-serif;margin:0;padding:0;background:#f5f5f5">
-    <div style="max-width:500px;margin:0 auto;padding:20px">
-        <div style="background:#e67e22;color:white;padding:30px;text-align:center;border-radius:12px 12px 0 0">
-            <h1 style="margin:0;font-size:24px">Oliebollen Costa Blanca</h1>
-            <p style="margin:10px 0 0 0;opacity:0.9">Bedankt voor je bestelling!</p>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;margin:0;padding:0;background:#f5f5f5;-webkit-text-size-adjust:100%">
+    <div style="max-width:400px;margin:0 auto;padding:12px">
+        <div style="background:#e67e22;color:white;padding:20px 16px;text-align:center;border-radius:12px 12px 0 0">
+            <h1 style="margin:0;font-size:20px;line-height:1.3">Oliebollen Costa Blanca</h1>
+            <p style="margin:8px 0 0 0;font-size:14px;opacity:0.9">Bedankt voor je bestelling!</p>
         </div>
-        <div style="background:white;padding:30px;border-radius:0 0 12px 12px">
-            <p style="font-size:16px">Hoi ${customer.naam.split(' ')[0]},</p>
-            <p>Je bestelling is bevestigd! Klik op de knop hieronder om je QR-code te bekijken en alle informatie over het ophalen.</p>
+        <div style="background:white;padding:20px 16px;border-radius:0 0 12px 12px">
+            <p style="font-size:15px;margin:0 0 12px 0;line-height:1.4">Hoi ${customer.naam.split(' ')[0]},</p>
+            <p style="font-size:14px;margin:0 0 20px 0;line-height:1.5;color:#444">Je bestelling is bevestigd! Tik op de knop hieronder om je QR-code te bekijken.</p>
 
-            <div style="text-align:center;margin:30px 0">
-                <a href="${orderPageUrl}" style="display:inline-block;background:#e67e22;color:white;padding:18px 40px;border-radius:8px;text-decoration:none;font-size:18px;font-weight:bold">
+            <div style="text-align:center;margin:20px 0">
+                <a href="${orderPageUrl}" style="display:block;background:#e67e22;color:white;padding:16px 20px;border-radius:8px;text-decoration:none;font-size:16px;font-weight:bold;text-align:center">
                     Bekijk mijn bestelling
                 </a>
             </div>
 
-            <div style="text-align:center;margin:20px 0;padding:15px;background:#f8f9fa;border-radius:8px">
-                <p style="margin:0;font-size:24px;font-weight:bold;color:#2c3e50">${orderNumber}</p>
-                <p style="margin:5px 0 0 0;font-size:12px;color:#666">Je bestelnummer</p>
+            <div style="text-align:center;margin:16px 0;padding:12px;background:#f8f9fa;border-radius:8px">
+                <p style="margin:0;font-size:20px;font-weight:bold;color:#2c3e50;letter-spacing:1px">${orderNumber}</p>
+                <p style="margin:4px 0 0 0;font-size:11px;color:#666">Je bestelnummer</p>
             </div>
 
-            <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0">
-                <h3 style="margin:0 0 15px 0;color:#2c3e50">Je bestelling</h3>
-                <table style="width:100%;border-collapse:collapse">
+            <div style="background:#f8f9fa;border-radius:8px;padding:14px;margin:16px 0">
+                <h3 style="margin:0 0 10px 0;color:#2c3e50;font-size:14px">Je bestelling</h3>
+                <table style="width:100%;border-collapse:collapse;font-size:13px">
                     ${productsHtml}
-                    <tr style="font-weight:bold;font-size:18px">
-                        <td style="padding:15px 8px 8px 8px" colspan="2">Totaal:</td>
-                        <td style="padding:15px 8px 8px 8px;text-align:right;color:#e67e22">EUR ${total.toFixed(2).replace('.', ',')}</td>
+                    <tr style="font-weight:bold">
+                        <td style="padding:10px 4px 4px 4px" colspan="2">Totaal:</td>
+                        <td style="padding:10px 4px 4px 4px;text-align:right;color:#e67e22;font-size:15px">EUR ${total.toFixed(2).replace('.', ',')}</td>
                     </tr>
                 </table>
             </div>
 
-            <div style="background:#e8f5e9;border:2px solid #27ae60;border-radius:8px;padding:20px;margin:20px 0;text-align:center">
-                <p style="margin:0;font-size:14px;color:#2e7d32;font-weight:bold">OPHALEN</p>
-                <p style="margin:8px 0 0 0;font-size:22px;font-weight:bold;color:#27ae60">31 december 2025</p>
-                <p style="margin:4px 0 0 0;font-size:20px;color:#2e7d32">${orderData.timeslotLabel || orderData.timeslot}</p>
+            <div style="background:#e8f5e9;border:2px solid #27ae60;border-radius:8px;padding:14px;margin:16px 0;text-align:center">
+                <p style="margin:0;font-size:11px;color:#2e7d32;font-weight:bold;text-transform:uppercase">Ophalen</p>
+                <p style="margin:6px 0 0 0;font-size:18px;font-weight:bold;color:#27ae60">31 december 2025</p>
+                <p style="margin:2px 0 0 0;font-size:16px;color:#2e7d32">${orderData.timeslotLabel || orderData.timeslot}</p>
             </div>
 
-            <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:15px;margin:20px 0;text-align:center">
-                <p style="margin:0;font-size:14px"><strong>Betaling:</strong> Contant bij ophalen - graag gepast!</p>
+            <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px;margin:16px 0;text-align:center">
+                <p style="margin:0;font-size:13px"><strong>Betaling:</strong> Contant - graag gepast!</p>
             </div>
 
-            <p style="text-align:center;font-size:13px;color:#999;margin-top:30px">
-                Tip: Voeg de bestelpagina toe aan je startscherm voor snelle toegang op 31 december!
+            <p style="text-align:center;font-size:12px;color:#999;margin:20px 0 0 0;line-height:1.4">
+                Tip: Voeg de bestelpagina toe aan je startscherm!
             </p>
 
-            <p style="text-align:center;color:#666;margin-top:20px">Tot 31 december!</p>
+            <p style="text-align:center;color:#666;margin:16px 0 0 0;font-size:14px">Tot 31 december!</p>
         </div>
     </div>
 </body>
