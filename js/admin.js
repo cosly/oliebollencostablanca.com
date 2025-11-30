@@ -1640,49 +1640,57 @@ async function doGenerateTimeslots() {
 }
 
 async function loadGeneratedTimeslots() {
+    const container = document.getElementById('timeslotsList');
+    if (!container) {
+        console.error('Timeslots container not found');
+        return;
+    }
+
     try {
         const response = await fetch(`${API_BASE}/timeslots`, {
             headers: getAuthHeaders()
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            const timeslots = data.timeslots || [];
+        if (!response.ok) {
+            console.error('Failed to load timeslots:', response.status);
+            container.innerHTML = '<p class="loading">Fout bij laden tijdsloten.</p>';
+            return;
+        }
 
-            const container = document.getElementById('timeslotsList');
-            if (timeslots.length === 0) {
-                container.innerHTML = '<p class="loading">Geen tijdsloten gegenereerd. Gebruik de knop hierboven om tijdsloten te maken.</p>';
-                return;
+        const data = await response.json();
+        const timeslots = data.timeslots || [];
+
+        if (timeslots.length === 0) {
+            container.innerHTML = '<p class="loading">Geen tijdsloten gegenereerd. Gebruik de knop hierboven om tijdsloten te maken.</p>';
+            return;
+        }
+
+        // Group by hour block
+        const grouped = {};
+        timeslots.forEach(slot => {
+            if (!grouped[slot.hourBlock]) {
+                grouped[slot.hourBlock] = [];
             }
+            grouped[slot.hourBlock].push(slot);
+        });
 
-            // Group by hour block
-            const grouped = {};
-            timeslots.forEach(slot => {
-                if (!grouped[slot.hourBlock]) {
-                    grouped[slot.hourBlock] = [];
-                }
-                grouped[slot.hourBlock].push(slot);
+        let html = '';
+        for (const [hourBlock, slots] of Object.entries(grouped)) {
+            html += `<div class="hour-block">
+                <div class="hour-block-header">${hourBlock}</div>
+                <div class="slots-row">`;
+
+            slots.forEach(slot => {
+                html += `<div class="slot-item">${slot.label}</div>`;
             });
 
-            let html = '';
-            for (const [hourBlock, slots] of Object.entries(grouped)) {
-                html += `<div class="hour-block">
-                    <h3>${hourBlock}</h3>
-                    <div class="slots-row">`;
-
-                slots.forEach(slot => {
-                    html += `<div class="slot-item">
-                        <span class="slot-time">${slot.label}</span>
-                    </div>`;
-                });
-
-                html += `</div></div>`;
-            }
-
-            container.innerHTML = html;
+            html += `</div></div>`;
         }
+
+        container.innerHTML = html;
     } catch (error) {
         console.error('Failed to load timeslots:', error);
+        container.innerHTML = '<p class="loading">Fout bij laden tijdsloten.</p>';
     }
 }
 
