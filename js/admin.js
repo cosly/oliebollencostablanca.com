@@ -1627,8 +1627,9 @@ async function doGenerateTimeslots() {
             const result = await response.json();
             showNotification(`${result.message} (${result.hourBlocks} uren)`, 'success');
 
-            // Reload timeslots list
+            // Reload timeslots and capacity
             await loadGeneratedTimeslots();
+            await loadCapacity();
         } else {
             const error = await response.json();
             throw new Error(error.details || 'Generation failed');
@@ -1717,6 +1718,7 @@ function initConfigManagement() {
             setTimeout(() => {
                 loadConfig();
                 loadGeneratedTimeslots();
+                loadCapacity();
             }, 100);
         });
     }
