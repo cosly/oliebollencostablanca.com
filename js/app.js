@@ -234,7 +234,8 @@ async function loadTimeslots() {
         // Try to fetch from API
         const response = await fetch(API_BASE + '/timeslots');
         if (response.ok) {
-            const timeslots = await response.json();
+            const data = await response.json();
+            const timeslots = data.timeslots || data; // Support both {timeslots: [...]} and raw array
             renderTimeslots(timeslots);
             return;
         }
