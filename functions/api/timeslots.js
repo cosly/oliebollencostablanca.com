@@ -13,6 +13,7 @@ export async function onRequestGet(context) {
             start: slot.start_time,
             end: slot.end_time,
             label: `${slot.start_time} - ${slot.end_time}`,
+            hourBlock: slot.hour_block,
             capacity: slot.capacity,
             booked: slot.booked || 0,
             available: slot.capacity - (slot.booked || 0)
