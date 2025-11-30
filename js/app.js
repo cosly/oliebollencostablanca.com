@@ -216,7 +216,10 @@ function goToStep(step) {
     currentStep = step;
 
     // Special actions per step
-    if (step === 4) {
+    if (step === 2) {
+        // Reload timeslots with fresh capacity data
+        loadTimeslots();
+    } else if (step === 4) {
         populateReview();
     }
 
@@ -273,9 +276,23 @@ function generateDemoTimeslots() {
                 start: time,
                 end: endTime,
                 label: `${time} - ${endTime}`,
-                capacity: capacity,
-                booked: booked,
-                available: available
+                products: {
+                    'oliebol_krenten': {
+                        capacity: 50,
+                        booked: Math.floor(Math.random() * 60),
+                        available: Math.max(0, 50 - Math.floor(Math.random() * 60))
+                    },
+                    'oliebol_naturel': {
+                        capacity: 50,
+                        booked: Math.floor(Math.random() * 60),
+                        available: Math.max(0, 50 - Math.floor(Math.random() * 60))
+                    },
+                    'appelbeignet': {
+                        capacity: 30,
+                        booked: Math.floor(Math.random() * 40),
+                        available: Math.max(0, 30 - Math.floor(Math.random() * 40))
+                    }
+                }
             });
         }
     }
