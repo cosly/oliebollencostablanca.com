@@ -29,16 +29,13 @@ export async function onRequestGet(context) {
             `SELECT * FROM timeslots ORDER BY id`
         ).all();
 
-        // Calculate available slots and generate label
+        // Generate label for each timeslot
         const slots = results.map(slot => ({
             id: slot.id,
             start: slot.start_time,
             end: slot.end_time,
             label: `${slot.start_time} - ${slot.end_time}`,
-            hourBlock: slot.hour_block,
-            capacity: slot.capacity,
-            booked: slot.booked || 0,
-            available: slot.capacity - (slot.booked || 0)
+            hourBlock: slot.hour_block
         }));
 
         return Response.json({ timeslots: slots }, { headers: corsHeaders(request) });
