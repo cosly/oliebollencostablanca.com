@@ -169,8 +169,65 @@
 
         <!-- Capacity Tab -->
         <section id="tab-capacity" class="admin-tab">
-            <div id="capacityList" class="capacity-list">
-                <!-- Capaciteit items worden hier geladen -->
+            <!-- Configuration Section -->
+            <div class="config-section">
+                <h2>Tijdslot Configuratie</h2>
+                <p class="section-description">Stel de dag in en genereer tijdsloten automatisch</p>
+
+                <div class="config-form">
+                    <div class="config-row">
+                        <div class="form-group">
+                            <label for="dayStartTime">Start tijd</label>
+                            <input type="time" id="dayStartTime" value="10:00">
+                        </div>
+                        <div class="form-group">
+                            <label for="dayEndTime">Eind tijd</label>
+                            <input type="time" id="dayEndTime" value="18:00">
+                        </div>
+                        <div class="form-group">
+                            <label for="slotDuration">Slot duur (minuten)</label>
+                            <select id="slotDuration">
+                                <option value="15">15 minuten</option>
+                                <option value="30" selected>30 minuten</option>
+                                <option value="45">45 minuten</option>
+                                <option value="60">60 minuten</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="config-row">
+                        <div class="form-group">
+                            <label for="capKrenten">Capaciteit met krenten (per uur)</label>
+                            <input type="number" id="capKrenten" value="50" min="0" max="500">
+                        </div>
+                        <div class="form-group">
+                            <label for="capNaturel">Capaciteit naturel (per uur)</label>
+                            <input type="number" id="capNaturel" value="50" min="0" max="500">
+                        </div>
+                        <div class="form-group">
+                            <label for="capAppelbeignet">Capaciteit appelbeignets (per uur)</label>
+                            <input type="number" id="capAppelbeignet" value="30" min="0" max="500">
+                        </div>
+                    </div>
+
+                    <div class="config-actions">
+                        <button id="saveConfigBtn" class="btn btn-primary">Configuratie opslaan</button>
+                        <button id="generateTimeslotsBtn" class="btn btn-warning">Tijdsloten genereren</button>
+                    </div>
+
+                    <div class="config-warning">
+                        ⚠️ <strong>Let op:</strong> Tijdsloten genereren verwijdert alle bestaande tijdsloten en capaciteiten.
+                        Bestaande bestellingen blijven behouden maar verwijzen mogelijk naar verwijderde tijdsloten.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Existing Capacity List -->
+            <div class="capacity-section">
+                <h2>Huidige Capaciteit per Uur</h2>
+                <div id="capacityList" class="capacity-list">
+                    <!-- Capaciteit items worden hier geladen -->
+                </div>
             </div>
         </section>
 

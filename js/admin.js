@@ -1522,3 +1522,145 @@ if ('serviceWorker' in navigator) {
         .then(reg => console.log('SW registered'))
         .catch(err => console.log('SW failed', err));
 }
+
+// =====================
+// Configuration Management
+// =====================
+async function loadConfig() {
+    try {
+        const response = await fetch(`${API_BASE}/config`, {
+            headers: { 'Authorization': `Bearer ${sessionToken}` }
+        });
+
+        if (response.ok) {
+            const config = await response.json();
+
+            // Fill form fields
+            if (config.day_start_time) {
+                document.getElementById('dayStartTime').value = config.day_start_time.value;
+            }
+            if (config.day_end_time) {
+                document.getElementById('dayEndTime').value = config.day_end_time.value;
+            }
+            if (config.slot_duration_minutes) {
+                document.getElementById('slotDuration').value = config.slot_duration_minutes.value;
+            }
+            if (config.default_capacity_krenten) {
+                document.getElementById('capKrenten').value = config.default_capacity_krenten.value;
+            }
+            if (config.default_capacity_naturel) {
+                document.getElementById('capNaturel').value = config.default_capacity_naturel.value;
+            }
+            if (config.default_capacity_appelbeignet) {
+                document.getElementById('capAppelbeignet').value = config.default_capacity_appelbeignet.value;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load config:', error);
+    }
+}
+
+async function saveConfig() {
+    const configData = {
+        day_start_time: document.getElementById('dayStartTime').value,
+        day_end_time: document.getElementById('dayEndTime').value,
+        slot_duration_minutes: document.getElementById('slotDuration').value,
+        default_capacity_krenten: document.getElementById('capKrenten').value,
+        default_capacity_naturel: document.getElementById('capNaturel').value,
+        default_capacity_appelbeignet: document.getElementById('capAppelbeignet').value
+    };
+
+    try {
+        const response = await fetch(`${API_BASE}/config`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionToken}`
+            },
+            body: JSON.stringify(configData)
+        });
+
+        if (response.ok) {
+            showNotification('Configuratie opgeslagen!', 'success');
+        } else {
+            throw new Error('Failed to save config');
+        }
+    } catch (error) {
+        console.error('Save config error:', error);
+        showNotification('Fout bij opslaan configuratie', 'error');
+    }
+}
+
+async function generateTimeslots() {
+    if (!confirm('WAARSCHUWING: Dit verwijdert alle bestaande tijdsloten en capaciteiten!\\n\\nBestaande bestellingen blijven behouden maar verwijzen mogelijk naar verwijderde tijdsloten.\\n\\nDoorgaan?')) {
+        return;
+    }
+
+    // First save config
+    await saveConfig();
+
+    try {
+        const response = await fetch(`${API_BASE}/generate-timeslots`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${sessionToken}`
+            }
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            showNotification(`${result.message} (${result.hourBlocks} uren)`, 'success');
+
+            // Reload capacity list
+            await loadCapacity();
+        } else {
+            const error = await response.json();
+            throw new Error(error.details || 'Generation failed');
+        }
+    } catch (error) {
+        console.error('Generate error:', error);
+        showNotification('Fout bij genereren tijdsloten: ' + error.message, 'error');
+    }
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = 'admin-notification notification-' + type;
+    notification.textContent = message;
+    notification.style.cssText = 'position: fixed; top: 20px; right: 20px; padding: 16px 24px; background: ' +
+        (type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#3498db') +
+        '; color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000;';
+
+    document.body.appendChild(notification);
+
+    setTimeout(function() {
+        notification.remove();
+    }, 3000);
+}
+
+// Initialize config management
+function initConfigManagement() {
+    const capacityTab = document.querySelector('[data-tab="capacity"]');
+    if (capacityTab) {
+        capacityTab.addEventListener('click', function() {
+            setTimeout(loadConfig, 100);
+        });
+    }
+
+    const saveBtn = document.getElementById('saveConfigBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveConfig);
+    }
+
+    const generateBtn = document.getElementById('generateTimeslotsBtn');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', generateTimeslots);
+    }
+}
+
+// Call init when page loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initConfigManagement);
+} else {
+    initConfigManagement();
+}

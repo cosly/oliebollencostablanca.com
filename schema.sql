@@ -38,6 +38,14 @@ CREATE TABLE IF NOT EXISTS product_capacity (
     UNIQUE(hour_block, product_id)
 );
 
+-- Configuration table
+-- Stores global settings like day start/end time and slot duration
+CREATE TABLE IF NOT EXISTS config (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    description TEXT
+);
+
 -- Initialize timeslots (30-minute intervals from 10:00 to 18:00)
 INSERT OR IGNORE INTO timeslots (id, start_time, end_time, hour_block) VALUES
     ('slot_1000', '10:00', '10:30', '10:00-11:00'),
@@ -92,6 +100,15 @@ INSERT OR IGNORE INTO product_capacity (hour_block, product_id, capacity, booked
     ('17:00-18:00', 'oliebol_krenten', 50, 0),
     ('17:00-18:00', 'oliebol_naturel', 50, 0),
     ('17:00-18:00', 'appelbeignet', 30, 0);
+
+-- Initialize default configuration
+INSERT OR IGNORE INTO config (key, value, description) VALUES
+    ('day_start_time', '10:00', 'Start tijd van de dag voor bestellingen'),
+    ('day_end_time', '18:00', 'Eind tijd van de dag voor bestellingen'),
+    ('slot_duration_minutes', '30', 'Duur van elk tijdslot in minuten'),
+    ('default_capacity_krenten', '50', 'Standaard capaciteit oliebollen met krenten per uur'),
+    ('default_capacity_naturel', '50', 'Standaard capaciteit oliebollen zonder krenten per uur'),
+    ('default_capacity_appelbeignet', '30', 'Standaard capaciteit appelbeignets per uur');
 
 -- Create indexes for faster lookups
 CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number);
