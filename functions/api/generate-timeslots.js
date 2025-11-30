@@ -1,6 +1,28 @@
+// ===== CORS Utilities =====
+const ALLOWED_ORIGINS = [
+    'http://localhost:8081',
+    'http://localhost:8080',
+    'http://127.0.0.1:8081',
+    'http://127.0.0.1:8080',
+    'https://oliebollencostablanca.com',
+    'https://www.oliebollencostablanca.com'
+];
+
+function corsHeaders(request) {
+    const origin = request?.headers?.get('Origin') || '*';
+    const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+
+    return {
+        'Access-Control-Allow-Origin': allowedOrigin,
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Max-Age': '86400'
+    };
+}
+
 // POST /api/generate-timeslots - Generate timeslots based on configuration
 export async function onRequestPost(context) {
-    const { env } = context;
+    const { env, request } = context;
 
     try {
         // Get configuration
@@ -89,10 +111,10 @@ export async function onRequestPost(context) {
             timeslots: timeslots.length,
             hourBlocks: hourBlocksArray.length,
             message: `${timeslots.length} tijdsloten gegenereerd`
-        });
+        }, { headers: corsHeaders(request) });
 
     } catch (error) {
         console.error('Generation error:', error);
-        return Response.json({ error: 'Generation failed', details: error.message }, { status: 500 });
+        return Response.json({ error: 'Generation failed', details: error.message }, { status: 500, headers: corsHeaders(request) });
     }
 }

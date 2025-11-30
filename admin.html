@@ -197,16 +197,16 @@
 
                     <div class="config-row">
                         <div class="form-group">
-                            <label for="capKrenten">Capaciteit met krenten (per uur)</label>
-                            <input type="number" id="capKrenten" value="50" min="0" max="500">
+                            <label for="capKrenten">🔴 Capaciteit met krenten (per uur)</label>
+                            <input type="number" id="capKrenten" class="input-red" value="50" min="0" max="500">
                         </div>
                         <div class="form-group">
-                            <label for="capNaturel">Capaciteit naturel (per uur)</label>
-                            <input type="number" id="capNaturel" value="50" min="0" max="500">
+                            <label for="capNaturel">🟠 Capaciteit naturel (per uur)</label>
+                            <input type="number" id="capNaturel" class="input-orange" value="50" min="0" max="500">
                         </div>
                         <div class="form-group">
-                            <label for="capAppelbeignet">Capaciteit appelbeignets (per uur)</label>
-                            <input type="number" id="capAppelbeignet" value="30" min="0" max="500">
+                            <label for="capAppelbeignet">🟢 Capaciteit appelbeignets (per uur)</label>
+                            <input type="number" id="capAppelbeignet" class="input-green" value="30" min="0" max="500">
                         </div>
                     </div>
 
@@ -222,13 +222,14 @@
                 </div>
             </div>
 
-            <!-- Existing Capacity List -->
-            <div class="capacity-section">
-                <h2>Huidige Capaciteit per Uur</h2>
-                <div id="capacityList" class="capacity-list">
-                    <!-- Capaciteit items worden hier geladen -->
+            <!-- Timeslots Overview -->
+            <div class="timeslots-overview">
+                <h2>Gegenereerde Tijdsloten</h2>
+                <div id="timeslotsList" class="timeslots-list">
+                    <p class="loading">Geen tijdsloten gegenereerd. Gebruik de knop hierboven om tijdsloten te maken.</p>
                 </div>
             </div>
+
         </section>
 
         <!-- Totals Tab -->
@@ -347,6 +348,19 @@
             <p style="text-align: center; font-size: 0.8rem; color: #999; margin-top: 12px;">
                 Tip: Reviews helpen ons enorm!
             </p>
+        </div>
+    </div>
+
+    <!-- Generate Timeslots Confirmation Modal -->
+    <div id="generateTimeslotsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3 style="color: #e74c3c;">⚠️ Waarschuwing</h3>
+            <p style="margin: 16px 0;">Dit verwijdert <strong>alle bestaande tijdsloten en capaciteiten</strong>!</p>
+            <p style="color: #666; font-size: 0.9rem;">Bestaande bestellingen blijven behouden maar verwijzen mogelijk naar verwijderde tijdsloten.</p>
+            <div class="modal-actions">
+                <button class="btn btn-danger" id="confirmGenerateTimeslots">Doorgaan</button>
+                <button class="btn btn-secondary" id="cancelGenerateTimeslots">Annuleren</button>
+            </div>
         </div>
     </div>
 

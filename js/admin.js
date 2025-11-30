@@ -118,14 +118,19 @@ async function handleRequestCode() {
 
         const data = await response.json();
 
+        console.log('Request code response:', { ok: response.ok, status: response.status, data });
+
         if (response.ok && data.pendingToken) {
             pendingToken = data.pendingToken;
+            console.log('Pending token saved:', pendingToken);
             showLoginStep2();
         } else {
+            console.error('Request failed:', data);
             errorEl.textContent = data.message || 'Kon geen code versturen';
             errorEl.style.display = 'block';
         }
     } catch (error) {
+        console.error('Request error:', error);
         errorEl.textContent = 'Verbindingsfout. Probeer opnieuw.';
         errorEl.style.display = 'block';
     }
@@ -155,17 +160,22 @@ async function handleTokenSubmit(e) {
 
         const data = await response.json();
 
-        if (response.ok && data.token) {
-            authToken = data.token;
-            localStorage.setItem(SESSION_KEY, data.token);
+        // Debug logging
+        console.log('Verify response:', { ok: response.ok, status: response.status, data });
+
+        if (response.ok && data.sessionToken) {
+            authToken = data.sessionToken;
+            localStorage.setItem(SESSION_KEY, data.sessionToken);
             pendingToken = null;
             showAdmin();
             initAdminPanel();
         } else {
-            errorEl.textContent = data.message || 'Onjuiste code';
+            console.error('Login failed:', data);
+            errorEl.textContent = data.error || 'Onjuiste code';
             errorEl.style.display = 'block';
         }
     } catch (error) {
+        console.error('Login error:', error);
         errorEl.textContent = 'Verbindingsfout. Probeer opnieuw.';
         errorEl.style.display = 'block';
     }
@@ -1529,7 +1539,7 @@ if ('serviceWorker' in navigator) {
 async function loadConfig() {
     try {
         const response = await fetch(`${API_BASE}/config`, {
-            headers: { 'Authorization': `Bearer ${sessionToken}` }
+            headers: getAuthHeaders()
         });
 
         if (response.ok) {
@@ -1575,7 +1585,7 @@ async function saveConfig() {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${sessionToken}`
+                ...getAuthHeaders()
             },
             body: JSON.stringify(configData)
         });
@@ -1583,7 +1593,9 @@ async function saveConfig() {
         if (response.ok) {
             showNotification('Configuratie opgeslagen!', 'success');
         } else {
-            throw new Error('Failed to save config');
+            const errorData = await response.json();
+            console.error('Save config failed:', errorData);
+            throw new Error(errorData.error || 'Failed to save config');
         }
     } catch (error) {
         console.error('Save config error:', error);
@@ -1591,10 +1603,16 @@ async function saveConfig() {
     }
 }
 
-async function generateTimeslots() {
-    if (!confirm('WAARSCHUWING: Dit verwijdert alle bestaande tijdsloten en capaciteiten!\\n\\nBestaande bestellingen blijven behouden maar verwijzen mogelijk naar verwijderde tijdsloten.\\n\\nDoorgaan?')) {
-        return;
-    }
+function generateTimeslots() {
+    // Show confirmation modal
+    const modal = document.getElementById('generateTimeslotsModal');
+    modal.style.display = 'flex';
+}
+
+async function doGenerateTimeslots() {
+    // Hide modal
+    const modal = document.getElementById('generateTimeslotsModal');
+    modal.style.display = 'none';
 
     // First save config
     await saveConfig();
@@ -1602,17 +1620,15 @@ async function generateTimeslots() {
     try {
         const response = await fetch(`${API_BASE}/generate-timeslots`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${sessionToken}`
-            }
+            headers: getAuthHeaders()
         });
 
         if (response.ok) {
             const result = await response.json();
             showNotification(`${result.message} (${result.hourBlocks} uren)`, 'success');
 
-            // Reload capacity list
-            await loadCapacity();
+            // Reload timeslots list
+            await loadGeneratedTimeslots();
         } else {
             const error = await response.json();
             throw new Error(error.details || 'Generation failed');
@@ -1620,6 +1636,53 @@ async function generateTimeslots() {
     } catch (error) {
         console.error('Generate error:', error);
         showNotification('Fout bij genereren tijdsloten: ' + error.message, 'error');
+    }
+}
+
+async function loadGeneratedTimeslots() {
+    try {
+        const response = await fetch(`${API_BASE}/timeslots`, {
+            headers: getAuthHeaders()
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const timeslots = data.timeslots || [];
+
+            const container = document.getElementById('timeslotsList');
+            if (timeslots.length === 0) {
+                container.innerHTML = '<p class="loading">Geen tijdsloten gegenereerd. Gebruik de knop hierboven om tijdsloten te maken.</p>';
+                return;
+            }
+
+            // Group by hour block
+            const grouped = {};
+            timeslots.forEach(slot => {
+                if (!grouped[slot.hourBlock]) {
+                    grouped[slot.hourBlock] = [];
+                }
+                grouped[slot.hourBlock].push(slot);
+            });
+
+            let html = '';
+            for (const [hourBlock, slots] of Object.entries(grouped)) {
+                html += `<div class="hour-block">
+                    <h3>${hourBlock}</h3>
+                    <div class="slots-row">`;
+
+                slots.forEach(slot => {
+                    html += `<div class="slot-item">
+                        <span class="slot-time">${slot.label}</span>
+                    </div>`;
+                });
+
+                html += `</div></div>`;
+            }
+
+            container.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Failed to load timeslots:', error);
     }
 }
 
@@ -1643,7 +1706,10 @@ function initConfigManagement() {
     const capacityTab = document.querySelector('[data-tab="capacity"]');
     if (capacityTab) {
         capacityTab.addEventListener('click', function() {
-            setTimeout(loadConfig, 100);
+            setTimeout(() => {
+                loadConfig();
+                loadGeneratedTimeslots();
+            }, 100);
         });
     }
 
@@ -1655,6 +1721,29 @@ function initConfigManagement() {
     const generateBtn = document.getElementById('generateTimeslotsBtn');
     if (generateBtn) {
         generateBtn.addEventListener('click', generateTimeslots);
+    }
+
+    // Modal handlers
+    const confirmGenerateBtn = document.getElementById('confirmGenerateTimeslots');
+    if (confirmGenerateBtn) {
+        confirmGenerateBtn.addEventListener('click', doGenerateTimeslots);
+    }
+
+    const cancelGenerateBtn = document.getElementById('cancelGenerateTimeslots');
+    if (cancelGenerateBtn) {
+        cancelGenerateBtn.addEventListener('click', () => {
+            document.getElementById('generateTimeslotsModal').style.display = 'none';
+        });
+    }
+
+    // Close modal on overlay click
+    const generateModal = document.getElementById('generateTimeslotsModal');
+    if (generateModal) {
+        generateModal.addEventListener('click', (e) => {
+            if (e.target === generateModal) {
+                generateModal.style.display = 'none';
+            }
+        });
     }
 }
 
