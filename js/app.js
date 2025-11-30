@@ -44,6 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTimeslots();
     initFormValidation();
     checkPrefillParams();
+    initDrawer();
+    initStepperNavigation();
 });
 
 // =====================
@@ -905,4 +907,58 @@ async function syncPendingOrders() {
     }
 
     localStorage.setItem('pendingOrders', JSON.stringify(pendingOrders));
+}
+
+// =====================
+// Drawer functionality
+// =====================
+function initDrawer() {
+    const infoBtn = document.getElementById('infoBtn');
+    const drawer = document.getElementById('infoDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+    const closeBtn = document.getElementById('drawerClose');
+
+    if (!infoBtn || !drawer || !overlay || !closeBtn) return;
+
+    // Open drawer
+    infoBtn.addEventListener('click', () => {
+        drawer.classList.add('active');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+
+    // Close drawer
+    const closeDrawer = () => {
+        drawer.classList.remove('active');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    };
+
+    closeBtn.addEventListener('click', closeDrawer);
+    overlay.addEventListener('click', closeDrawer);
+
+    // Close on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && drawer.classList.contains('active')) {
+            closeDrawer();
+        }
+    });
+}
+
+// =====================
+// Clickable stepper navigation
+// =====================
+function initStepperNavigation() {
+    const steps = document.querySelectorAll('.step');
+    
+    steps.forEach((step, index) => {
+        step.addEventListener('click', () => {
+            const stepNumber = index + 1;
+            
+            // Only allow navigation to current or previous steps
+            if (stepNumber <= currentStep) {
+                goToStep(stepNumber);
+            }
+        });
+    });
 }

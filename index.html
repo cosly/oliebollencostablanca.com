@@ -22,6 +22,13 @@
 <body>
     <header class="hero">
         <div class="container">
+            <button class="info-btn" id="infoBtn" aria-label="Meer informatie">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+            </button>
             <h1>Oliebollen Costa Blanca</h1>
             <p class="tagline">Echte Hollandse oliebollen voor Oud & Nieuw 2025!</p>
             <p class="subtitle">Bestel nu, haal op 31 december</p>
@@ -267,27 +274,6 @@
                 </div>
             </div>
         </section>
-
-        <!-- Info sectie -->
-        <section class="info-section">
-            <div class="info-cards">
-                <div class="info-card">
-                    <span class="info-icon">31 dec</span>
-                    <h3>Ophalen</h3>
-                    <p>31 december 2025<br>Kies je eigen tijdslot</p>
-                </div>
-                <div class="info-card">
-                    <span class="info-icon">Cash</span>
-                    <h3>Betaling</h3>
-                    <p>Contant bij ophalen<br>Graag gepast!</p>
-                </div>
-                <div class="info-card">
-                    <span class="info-icon">QR</span>
-                    <h3>QR-code</h3>
-                    <p>Je krijgt een QR-code<br>per e-mail</p>
-                </div>
-            </div>
-        </section>
     </main>
 
     <footer>
@@ -296,6 +282,63 @@
             <p>Vragen? WhatsApp ons!</p>
         </div>
     </footer>
+
+    <!-- Info Drawer -->
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+    <div class="drawer" id="infoDrawer">
+        <div class="drawer-header">
+            <h2>Hoe werkt het?</h2>
+            <button class="drawer-close" id="drawerClose" aria-label="Sluiten">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="drawer-content">
+            <div class="drawer-step">
+                <div class="drawer-step-number">1</div>
+                <div class="drawer-step-info">
+                    <h3>Kies je producten</h3>
+                    <p>Selecteer hoeveel oliebollen met of zonder krenten en appelbeignets je wilt bestellen. Gebruik de + en - knoppen om het aantal aan te passen.</p>
+                </div>
+            </div>
+
+            <div class="drawer-step">
+                <div class="drawer-step-number">2</div>
+                <div class="drawer-step-info">
+                    <h3>Kies een tijdslot</h3>
+                    <p>Selecteer wanneer je je bestelling wilt ophalen op 31 december 2025. Elk tijdslot is 30 minuten. Let op: tijdsloten kunnen vol raken!</p>
+                </div>
+            </div>
+
+            <div class="drawer-step">
+                <div class="drawer-step-number">3</div>
+                <div class="drawer-step-info">
+                    <h3>Vul je gegevens in</h3>
+                    <p>Voer je naam, e-mailadres en telefoonnummer in. Je ontvangt hierop de bevestiging van je bestelling.</p>
+                </div>
+            </div>
+
+            <div class="drawer-step">
+                <div class="drawer-step-number">4</div>
+                <div class="drawer-step-info">
+                    <h3>Bevestig je bestelling</h3>
+                    <p>Controleer je bestelling en verstuur deze. Je ontvangt direct een e-mail met je QR-code. Toon deze bij het ophalen.</p>
+                </div>
+            </div>
+
+            <div class="drawer-extra">
+                <h3>Belangrijk om te weten</h3>
+                <ul>
+                    <li><strong>Betaling:</strong> Contant bij ophalen - graag gepast!</li>
+                    <li><strong>QR-code:</strong> Bewaar de QR-code uit je e-mail (op telefoon of geprint)</li>
+                    <li><strong>Ophalen:</strong> Kom op tijd tijdens je gekozen tijdslot</li>
+                    <li><strong>Annuleren:</strong> Kun je niet komen? Laat het ons weten via WhatsApp</li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
     <script src="js/app.js"></script>
 </body>
