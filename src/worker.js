@@ -593,6 +593,14 @@ async function handleRequestCode(request, env) {
     // Generate login code
     const code = generateLoginCode();
 
+    // Log code in development for easy access
+    if (env.ENVIRONMENT === 'development') {
+        console.log('═══════════════════════════════════════');
+        console.log('🔐 ADMIN LOGIN CODE:', code);
+        console.log('📧 Email:', email);
+        console.log('═══════════════════════════════════════');
+    }
+
     // Generate pending token
     const pendingToken = await generatePendingToken(email, code, env);
 
