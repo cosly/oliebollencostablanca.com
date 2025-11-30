@@ -25,17 +25,37 @@ export async function onRequestGet(context) {
     const { env, request } = context;
 
     try {
-        const { results } = await env.DB.prepare(
+        // Get all timeslots
+        const { results: timeslots } = await env.DB.prepare(
             `SELECT * FROM timeslots ORDER BY id`
         ).all();
 
-        // Generate label for each timeslot
-        const slots = results.map(slot => ({
+        // Get all product capacity
+        const { results: capacities } = await env.DB.prepare(
+            `SELECT * FROM product_capacity`
+        ).all();
+
+        // Group capacities by hour_block
+        const capacityByHour = {};
+        capacities.forEach(cap => {
+            if (!capacityByHour[cap.hour_block]) {
+                capacityByHour[cap.hour_block] = {};
+            }
+            capacityByHour[cap.hour_block][cap.product_id] = {
+                capacity: cap.capacity,
+                booked: cap.booked,
+                available: cap.capacity - cap.booked
+            };
+        });
+
+        // Generate slots with capacity info
+        const slots = timeslots.map(slot => ({
             id: slot.id,
             start: slot.start_time,
             end: slot.end_time,
             label: `${slot.start_time} - ${slot.end_time}`,
-            hourBlock: slot.hour_block
+            hourBlock: slot.hour_block,
+            products: capacityByHour[slot.hour_block] || {}
         }));
 
         return Response.json({ timeslots: slots }, { headers: corsHeaders(request) });
