@@ -75,26 +75,51 @@ export async function onRequestPost(context) {
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${orderNumber}`;
     const createdAt = new Date().toISOString();
 
-    // Check capacity before placing order
+    // Check capacity per product before placing order
     try {
-        const { results } = await env.DB.prepare(
-            `SELECT capacity, booked FROM timeslots WHERE id = ?`
+        // Get timeslot to find hour_block
+        const { results: timeslots } = await env.DB.prepare(
+            `SELECT hour_block FROM timeslots WHERE id = ?`
         ).bind(data.timeslot).all();
 
-        if (results.length === 0) {
+        if (timeslots.length === 0) {
             return Response.json({ error: 'Tijdslot niet gevonden' }, { status: 400 });
         }
 
-        const slot = results[0];
-        const available = slot.capacity - (slot.booked || 0);
+        const hourBlock = timeslots[0].hour_block;
 
-        if (totalItems > available) {
-            return Response.json({
-                error: 'Onvoldoende capaciteit',
-                message: `Er zijn nog maar ${available} stuks beschikbaar in dit tijdslot. Je bestelling is ${totalItems} stuks.`,
-                available: available,
-                requested: totalItems
-            }, { status: 400 });
+        // Check capacity for each product
+        for (const [productId, quantity] of Object.entries(data.products)) {
+            if (quantity > 0) {
+                const { results } = await env.DB.prepare(
+                    `SELECT capacity, booked FROM product_capacity WHERE hour_block = ? AND product_id = ?`
+                ).bind(hourBlock, productId).all();
+
+                if (results.length === 0) {
+                    return Response.json({
+                        error: 'Product capaciteit niet gevonden',
+                        product: productId
+                    }, { status: 400 });
+                }
+
+                const productCap = results[0];
+                const available = productCap.capacity - productCap.booked;
+
+                if (quantity > available) {
+                    const productNames = {
+                        'oliebol_krenten': 'oliebollen met krenten',
+                        'oliebol_naturel': 'oliebollen zonder krenten',
+                        'appelbeignet': 'appelbeignets'
+                    };
+                    return Response.json({
+                        error: 'Onvoldoende capaciteit',
+                        message: `Er zijn nog maar ${available} ${productNames[productId] || productId} beschikbaar in dit tijdslot.`,
+                        product: productId,
+                        available: available,
+                        requested: quantity
+                    }, { status: 400 });
+                }
+            }
         }
     } catch (error) {
         console.error('Capacity check error:', error);
@@ -117,10 +142,20 @@ export async function onRequestPost(context) {
             createdAt
         ).run();
 
-        // Update timeslot booked count (add total items, not just 1)
-        await env.DB.prepare(
-            `UPDATE timeslots SET booked = booked + ? WHERE id = ?`
-        ).bind(totalItems, data.timeslot).run();
+        // Update product capacity booked counts per product
+        const { results: timeslots } = await env.DB.prepare(
+            `SELECT hour_block FROM timeslots WHERE id = ?`
+        ).bind(data.timeslot).all();
+
+        const hourBlock = timeslots[0].hour_block;
+
+        for (const [productId, quantity] of Object.entries(data.products)) {
+            if (quantity > 0) {
+                await env.DB.prepare(
+                    `UPDATE product_capacity SET booked = booked + ? WHERE hour_block = ? AND product_id = ?`
+                ).bind(quantity, hourBlock, productId).run();
+            }
+        }
 
     } catch (error) {
         console.error('Database error:', error);
