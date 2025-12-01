@@ -774,8 +774,30 @@ function updateOrderCounts() {
         orders.filter(o => o.status === 'noshow').length;
 }
 
-function renderTimeslotOverview() {
+// Global config cache
+let configCache = null;
+
+async function renderTimeslotOverview() {
     const container = document.getElementById('timeslotOverview');
+
+    // Load config if not cached
+    if (!configCache) {
+        try {
+            const response = await fetch(`${API_BASE}/config`, {
+                headers: getAuthHeaders()
+            });
+            if (response.ok) {
+                configCache = await response.json();
+            }
+        } catch (error) {
+            console.error('Failed to load config for overview:', error);
+        }
+    }
+
+    // Get capacity values from config or use defaults
+    const maxCapacityKrenten = configCache?.default_capacity_krenten?.value || 50;
+    const maxCapacityNaturel = configCache?.default_capacity_naturel?.value || 50;
+    const maxCapacityAppelbeignet = configCache?.default_capacity_appelbeignet?.value || 30;
 
     // Group orders by timeslot
     const timeslotGroups = {};
@@ -809,11 +831,13 @@ function renderTimeslotOverview() {
         const orderCount = data.orders.length;
         const totalItems = data.krenten + data.naturel + data.appelbeignet;
 
-        // Calculate capacity percentage (assuming 50 per hour for oliebollen, 30 for appelbeignets)
-        // This is a simplified calculation - you might want to fetch actual capacity from API
-        const maxCapacity = 50; // per hour per product type
-        const capacityUsed = Math.max(data.krenten, data.naturel, data.appelbeignet);
-        const capacityPercentage = Math.min(100, (capacityUsed / maxCapacity) * 100);
+        // Calculate capacity percentage for each product type
+        const krentenPercentage = (data.krenten / maxCapacityKrenten) * 100;
+        const naturelPercentage = (data.naturel / maxCapacityNaturel) * 100;
+        const appelbeignetPercentage = (data.appelbeignet / maxCapacityAppelbeignet) * 100;
+
+        // Use the highest percentage for overall capacity indicator
+        const capacityPercentage = Math.min(100, Math.max(krentenPercentage, naturelPercentage, appelbeignetPercentage));
 
         // Determine card status
         let cardClass = '';
@@ -1841,6 +1865,8 @@ async function saveConfig() {
         });
 
         if (response.ok) {
+            // Invalidate config cache so it reloads
+            configCache = null;
             showNotification('Configuratie opgeslagen!', 'success');
         } else {
             const errorData = await response.json();
