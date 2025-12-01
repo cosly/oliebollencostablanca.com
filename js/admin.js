@@ -247,12 +247,14 @@ function initTabs() {
             // Load data when entering tabs
             if (tabId === 'orders') {
                 loadOrders();
+            } else if (tabId === 'waitinglist') {
+                loadWaitinglist();
             } else if (tabId === 'totals') {
                 updateTotals();
             } else if (tabId === 'capacity') {
                 loadConfig();
                 loadGeneratedTimeslots();
-                loadCapacity();
+                renderCapacityList();
             }
         });
     });
@@ -1443,9 +1445,9 @@ function formatPrice(amount) {
 
 function calculateOrderTotal(order) {
     const PRICES = {
-        oliebol_krenten: 1.00,
+        oliebol_krenten: 1.10,
         oliebol_naturel: 1.00,
-        appelbeignet: 1.10
+        appelbeignet: 1.25
     };
 
     let total = 0;
@@ -1905,7 +1907,7 @@ async function doGenerateTimeslots() {
 
             // Reload timeslots and capacity
             await loadGeneratedTimeslots();
-            await loadCapacity();
+            renderCapacityList();
         } else {
             const error = await response.json();
             throw new Error(error.details || 'Generation failed');
@@ -2019,6 +2021,227 @@ function initConfigManagement() {
                 generateModal.style.display = 'none';
             }
         });
+    }
+}
+
+// =====================
+// Waitinglist Management
+// =====================
+async function loadWaitinglist() {
+    try {
+        const response = await fetch(`${API_BASE}/waitinglist?status=pending`, {
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load waitinglist');
+        }
+
+        const entries = await response.json();
+        renderWaitinglist(entries);
+        updateWaitinglistSummary(entries);
+    } catch (error) {
+        console.error('Error loading waitinglist:', error);
+        document.getElementById('waitinglistList').innerHTML = '<p class="error">Fout bij laden reservelijst</p>';
+    }
+}
+
+function updateWaitinglistSummary(entries) {
+    const pending = entries.filter(e => e.status === 'pending').length;
+    const approved = entries.filter(e => e.status === 'approved').length;
+    const rejected = entries.filter(e => e.status === 'rejected').length;
+
+    document.getElementById('waitinglistPendingCount').textContent = pending;
+    document.getElementById('waitinglistApprovedCount').textContent = approved;
+    document.getElementById('waitinglistRejectedCount').textContent = rejected;
+}
+
+function renderWaitinglist(entries) {
+    const container = document.getElementById('waitinglistList');
+
+    if (entries.length === 0) {
+        container.innerHTML = '<p class="no-data">Geen items op de reservelijst</p>';
+        return;
+    }
+
+    container.innerHTML = entries.map(entry => `
+        <div class="waitinglist-card" data-id="${entry.id}">
+            <div class="waitinglist-card-header">
+                <span class="waitinglist-number">${entry.order_number}</span>
+                <span class="waitinglist-status ${entry.status}">${getStatusLabel(entry.status)}</span>
+            </div>
+            <div class="waitinglist-card-body">
+                <div class="waitinglist-customer">
+                    <strong>${entry.naam}</strong><br>
+                    ${entry.email}<br>
+                    ${entry.telefoon}
+                </div>
+                <div class="waitinglist-timeslot">
+                    <strong>Gewenst tijdslot:</strong> ${entry.requested_timeslot_label || 'Geen voorkeur'}
+                </div>
+                <div class="waitinglist-items">
+                    ${entry.oliebol_krenten > 0 ? `${entry.oliebol_krenten}x Oliebollen met krenten<br>` : ''}
+                    ${entry.oliebol_naturel > 0 ? `${entry.oliebol_naturel}x Oliebollen naturel<br>` : ''}
+                    ${entry.appelbeignet > 0 ? `${entry.appelbeignet}x Appelbeignets<br>` : ''}
+                </div>
+                <div class="waitinglist-total">
+                    Totaal: € ${entry.total_price.toFixed(2).replace('.', ',')}
+                </div>
+                <div class="waitinglist-created">
+                    Aangemaakt: ${new Date(entry.created_at).toLocaleString('nl-NL')}
+                </div>
+                ${entry.notes ? `<div class="waitinglist-notes"><strong>Notities:</strong> ${entry.notes}</div>` : ''}
+            </div>
+            <div class="waitinglist-actions">
+                <button class="btn btn-sm btn-primary" data-action="approve" data-id="${entry.id}">Goedkeuren</button>
+                <button class="btn btn-sm btn-secondary" data-action="note" data-id="${entry.id}">Notitie toevoegen</button>
+                <button class="btn btn-sm btn-danger" data-action="reject" data-id="${entry.id}">Afwijzen</button>
+            </div>
+        </div>
+    `).join('');
+
+    // Add event listeners to action buttons
+    container.querySelectorAll('[data-action]').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const action = e.target.dataset.action;
+            const id = e.target.dataset.id;
+
+            if (action === 'approve') {
+                approveWaitinglistEntry(id);
+            } else if (action === 'note') {
+                addNoteToWaitinglist(id);
+            } else if (action === 'reject') {
+                rejectWaitinglistEntry(id);
+            }
+        });
+    });
+}
+
+function getStatusLabel(status) {
+    const labels = {
+        'pending': 'Wachtend',
+        'approved': 'Goedgekeurd',
+        'rejected': 'Afgewezen',
+        'expired': 'Verlopen'
+    };
+    return labels[status] || status;
+}
+
+async function approveWaitinglistEntry(id) {
+    // Get all available timeslots
+    const timeslotsResponse = await fetch(`${API_BASE}/timeslots`);
+    const timeslotsData = await timeslotsResponse.json();
+    const availableSlots = timeslotsData.timeslots.filter(slot => {
+        // Check if slot has capacity for the order
+        // For now, just show all slots - admin can manually verify
+        return true;
+    });
+
+    // Show timeslot selection dialog
+    const timeslotOptions = availableSlots.map(slot =>
+        `<option value="${slot.id}">${slot.label}</option>`
+    ).join('');
+
+    const selectedTimeslot = prompt(
+        'Selecteer een tijdslot voor deze bestelling (of klik Annuleren om capaciteit te verhogen):\n\n' +
+        'Tip: Check eerst de capaciteit tab om te zien welke slots ruimte hebben.'
+    );
+
+    if (selectedTimeslot === null) {
+        // User cancelled - they might want to increase capacity first
+        alert('Goedkeuring geannuleerd. Verhoog eerst de capaciteit als nodig.');
+        return;
+    }
+
+    // Ask for confirmation
+    const notes = prompt('Optioneel: Voeg een notitie toe over deze goedkeuring:');
+
+    try {
+        const response = await fetch(`${API_BASE}/waitinglist`, {
+            method: 'PUT',
+            headers: {
+                ...getAuthHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: id,
+                status: 'approved',
+                approved_timeslot_id: selectedTimeslot || null,
+                notes: notes || undefined
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to approve entry');
+        }
+
+        showNotification('Reservering goedgekeurd! Vergeet niet de klant te contacteren.', 'success');
+        loadWaitinglist();
+    } catch (error) {
+        console.error('Error approving waitinglist entry:', error);
+        showNotification('Fout bij goedkeuren reservering', 'error');
+    }
+}
+
+async function rejectWaitinglistEntry(id) {
+    if (!confirm('Weet je zeker dat je deze reservering wilt afwijzen?')) {
+        return;
+    }
+
+    const reason = prompt('Optioneel: Geef een reden op voor de afwijzing:');
+
+    try {
+        const response = await fetch(`${API_BASE}/waitinglist`, {
+            method: 'PUT',
+            headers: {
+                ...getAuthHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: id,
+                status: 'rejected',
+                notes: reason || undefined
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to reject entry');
+        }
+
+        showNotification('Reservering afgewezen. Vergeet niet de klant te contacteren.', 'success');
+        loadWaitinglist();
+    } catch (error) {
+        console.error('Error rejecting waitinglist entry:', error);
+        showNotification('Fout bij afwijzen reservering', 'error');
+    }
+}
+
+async function addNoteToWaitinglist(id) {
+    const note = prompt('Voeg een notitie toe:');
+    if (!note) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/waitinglist`, {
+            method: 'PUT',
+            headers: {
+                ...getAuthHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: id,
+                notes: note
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to add note');
+        }
+
+        showNotification('Notitie toegevoegd', 'success');
+        loadWaitinglist();
+    } catch (error) {
+        console.error('Error adding note:', error);
+        showNotification('Fout bij toevoegen notitie', 'error');
     }
 }
 

@@ -1,7 +1,7 @@
 const PRICES = {
-    oliebol_krenten: 1.00,
+    oliebol_krenten: 1.10,
     oliebol_naturel: 1.00,
-    appelbeignet: 1.10
+    appelbeignet: 1.25
 };
 
 const PRODUCT_NAMES = {

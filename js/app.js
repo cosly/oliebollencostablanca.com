@@ -5,9 +5,9 @@
 
 // Prijzen
 const PRICES = {
-    oliebol_krenten: 1.00,
+    oliebol_krenten: 1.10,
     oliebol_naturel: 1.00,
-    appelbeignet: 1.10
+    appelbeignet: 1.25
 };
 
 const PRODUCT_NAMES = {
@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkPrefillParams();
     initDrawer();
     initStepperNavigation();
+    initProductImageUpload();
 });
 
 // =====================
@@ -578,15 +579,51 @@ async function submitOrder() {
                 // Handle capacity error
                 const errorData = await response.json();
                 if (errorData.error === 'Onvoldoende capaciteit') {
-                    alert(errorData.message || 'Er is niet genoeg capaciteit in dit tijdslot. Kies een ander tijdslot.');
-                    // Reload timeslots to get fresh availability
-                    loadTimeslots();
-                    goToStep(2);
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Bestelling plaatsen';
-                    return;
+                    // Offer waitinglist option
+                    const useWaitinglist = confirm(
+                        errorData.message + '\n\n' +
+                        'Wil je op de reservelijst geplaatst worden? We nemen dan contact met je op om een ander tijdslot te bespreken of de capaciteit te verhogen.'
+                    );
+
+                    if (useWaitinglist) {
+                        // Submit to waitinglist instead
+                        const waitinglistOrder = {
+                            naam: orderData.customer.naam,
+                            email: orderData.customer.email,
+                            telefoon: orderData.customer.telefoon,
+                            requested_timeslot_id: orderData.timeslot.id,
+                            requested_timeslot_label: orderData.timeslot.label,
+                            oliebol_krenten: orderData.products.oliebol_krenten || 0,
+                            oliebol_naturel: orderData.products.oliebol_naturel || 0,
+                            appelbeignet: orderData.products.appelbeignet || 0
+                        };
+
+                        const waitinglistResponse = await fetch(API_BASE + '/waitinglist', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(waitinglistOrder)
+                        });
+
+                        if (waitinglistResponse.ok) {
+                            const waitinglistResult = await waitinglistResponse.json();
+                            orderResult = {
+                                orderNumber: waitinglistResult.orderNumber,
+                                isWaitinglist: true
+                            };
+                        } else {
+                            throw new Error('Reservelijst toevoegen mislukt');
+                        }
+                    } else {
+                        // User declined waitinglist, go back to timeslot selection
+                        loadTimeslots();
+                        goToStep(2);
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Bestelling plaatsen';
+                        return;
+                    }
+                } else {
+                    throw new Error(errorData.error || 'Bestelling mislukt');
                 }
-                throw new Error(errorData.error || 'Bestelling mislukt');
             }
         } catch (e) {
             if (e.message && e.message.includes('capaciteit')) {
@@ -642,15 +679,44 @@ function showConfirmation(result) {
     });
     document.getElementById('stepComplete').classList.add('active');
 
+    // Check if this is a waitinglist order
+    const isWaitinglist = result.isWaitinglist === true;
+
+    // Update confirmation header and message
+    const confirmationIcon = document.querySelector('.confirmation-icon');
+    const confirmationHeading = document.querySelector('#stepComplete h2');
+    const confirmationMessage = document.querySelector('#stepComplete > .confirmation > p');
+
+    if (isWaitinglist) {
+        confirmationIcon.textContent = 'Op reservelijst!';
+        confirmationIcon.style.background = '#f39c12'; // Orange color
+        confirmationHeading.textContent = 'Je staat op de reservelijst';
+        confirmationMessage.textContent = 'We nemen binnenkort contact met je op om een geschikt tijdslot te bespreken of de capaciteit te verhogen.';
+    } else {
+        confirmationIcon.textContent = 'Gelukt!';
+        confirmationIcon.style.background = '#27ae60'; // Green color
+        confirmationHeading.textContent = 'Bedankt voor je bestelling!';
+        confirmationMessage.textContent = 'Je ontvangt zo een bevestiging per e-mail met een QR-code.';
+    }
+
     // Populate confirmation details
     document.getElementById('orderNumber').textContent = result.orderNumber;
     document.getElementById('confirmTimeslot').textContent =
-        `31 december 2025, ${orderData.timeslot.label}`;
+        `31 december 2025, ${orderData.timeslot.label}${isWaitinglist ? ' (gewenst)' : ''}`;
     document.getElementById('confirmTotal').textContent = formatPrice(calculateTotal());
 
-    // Generate QR code (using QRCode.js library or show placeholder)
+    // Generate QR code or show order number
     const qrContainer = document.getElementById('confirmationQR');
-    if (typeof QRCode !== 'undefined' && result.orderNumber) {
+    if (isWaitinglist) {
+        // For waitinglist, just show the order number prominently
+        qrContainer.innerHTML = `
+            <div style="background: #fff3cd; padding: 20px; border-radius: 8px; border: 2px dashed #f39c12;">
+                <p style="font-size: 0.9rem; color: #856404; margin-bottom: 8px;">Je reserveringsnummer:</p>
+                <p style="font-size: 1.5rem; font-weight: 700; color: #856404;">${result.orderNumber}</p>
+                <p style="font-size: 0.8rem; color: #856404; margin-top: 8px;">Bewaar dit nummer voor je administratie</p>
+            </div>
+        `;
+    } else if (typeof QRCode !== 'undefined' && result.orderNumber) {
         qrContainer.innerHTML = '';
         new QRCode(qrContainer, {
             text: result.orderNumber,
@@ -990,15 +1056,69 @@ function initDrawer() {
 // =====================
 function initStepperNavigation() {
     const steps = document.querySelectorAll('.step');
-    
+
     steps.forEach((step, index) => {
         step.addEventListener('click', () => {
             const stepNumber = index + 1;
-            
+
             // Only allow navigation to current or previous steps
             if (stepNumber <= currentStep) {
                 goToStep(stepNumber);
             }
         });
     });
+}
+
+// =====================
+// Product image modal via camera button
+// =====================
+function initProductImageUpload() {
+    const cameraBtn = document.getElementById('cameraBtn');
+
+    if (cameraBtn) {
+        // Click on camera icon shows photo modal
+        cameraBtn.addEventListener('click', () => {
+            showImageModal('images/appelbeignet.jpg', 'Grootmoeders Appelbeignet');
+        });
+    }
+}
+
+function showImageModal(imageSrc, title) {
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'image-modal';
+    modal.innerHTML = `
+        <div class="image-modal-content">
+            <div class="image-modal-header">
+                <h3>${title}</h3>
+                <button class="image-modal-close" aria-label="Sluiten">&times;</button>
+            </div>
+            <div class="image-modal-body">
+                <img src="${imageSrc}" alt="${title}" class="image-modal-img">
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Close modal on click outside or close button
+    const closeBtn = modal.querySelector('.image-modal-close');
+    closeBtn.addEventListener('click', () => {
+        modal.remove();
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+
+    // Close on escape key
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
 }

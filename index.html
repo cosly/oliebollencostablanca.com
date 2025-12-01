@@ -23,11 +23,7 @@
     <header class="hero">
         <div class="container">
             <button class="info-btn" id="infoBtn" aria-label="Meer informatie">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
+                ?
             </button>
             <h1>Oliebollen Costa Blanca</h1>
             <p class="tagline">Echte Hollandse oliebollen voor Oud & Nieuw 2025!</p>
@@ -67,9 +63,9 @@
                     <div class="product-list">
                         <div class="product-card">
                             <div class="product-info">
-                                <h3>Oliebollen met krenten</h3>
-                                <p class="product-description">Klassieke oliebol met rozijnen</p>
-                                <p class="product-price">€ 1,00 per stuk</p>
+                                <h3>Oliebollen met rozijnen</h3>
+                                <p class="product-description">Traditionele oliebol met rozijnen</p>
+                                <p class="product-price">€ 1,10 per stuk</p>
                             </div>
                             <div class="product-quantity">
                                 <button type="button" class="qty-btn minus" data-product="oliebol_krenten">-</button>
@@ -80,8 +76,8 @@
 
                         <div class="product-card">
                             <div class="product-info">
-                                <h3>Oliebollen zonder krenten</h3>
-                                <p class="product-description">Klassieke oliebol naturel</p>
+                                <h3>Oliebollen naturel</h3>
+                                <p class="product-description">Traditionele Oliebollen zonder rozijnen</p>
                                 <p class="product-price">€ 1,00 per stuk</p>
                             </div>
                             <div class="product-quantity">
@@ -93,9 +89,18 @@
 
                         <div class="product-card">
                             <div class="product-info">
-                                <h3>Appelbeignets</h3>
-                                <p class="product-description">Knapperige appelbeignet met kaneel</p>
-                                <p class="product-price">€ 1,10 per stuk</p>
+                                <h3>
+                                    Appelbeignets
+                                    <button type="button" class="camera-btn" id="cameraBtn" aria-label="Foto toevoegen" title="Klik om foto toe te voegen">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                            <circle cx="12" cy="13" r="4"></circle>
+                                        </svg>
+                                    </button>
+                                </h3>
+                                <input type="file" id="appelbeignetFileInput" accept="image/*" style="display: none;">
+                                <p class="product-description">Grootmoeders Appelbeignet</p>
+                                <p class="product-price">€ 1,25 per stuk</p>
                             </div>
                             <div class="product-quantity">
                                 <button type="button" class="qty-btn minus" data-product="appelbeignet">-</button>
@@ -279,7 +284,7 @@
     <footer>
         <div class="container">
             <p>© 2025 Oliebollen Costa Blanca</p>
-            <p>Vragen? WhatsApp ons!</p>
+            <p>Vragen? <a href="https://wa.me/34600999512" target="_blank" style="color: #25D366; text-decoration: underline;">WhatsApp ons!</a></p>
         </div>
     </footer>
 
@@ -300,7 +305,7 @@
                 <div class="drawer-step-number">1</div>
                 <div class="drawer-step-info">
                     <h3>Kies je producten</h3>
-                    <p>Selecteer hoeveel oliebollen met of zonder krenten en appelbeignets je wilt bestellen. Gebruik de + en - knoppen om het aantal aan te passen.</p>
+                    <p>Selecteer hoeveel oliebollen met of zonder rozijnen en appelbeignets je wilt bestellen. Gebruik de + en - knoppen om het aantal aan te passen.</p>
                 </div>
             </div>
 
