@@ -931,6 +931,20 @@ footer p {
 
 .admin-content {
     padding: 16px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+    .admin-content {
+        padding: 24px 32px;
+    }
+}
+
+@media (min-width: 1600px) {
+    .admin-content {
+        max-width: 1600px;
+    }
 }
 
 /* Order Cards (Admin) */
