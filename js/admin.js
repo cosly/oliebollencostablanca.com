@@ -1441,7 +1441,7 @@ function checkTimeAgainstSlot(startTime, endTime) {
 // Utility Functions
 // =====================
 function formatPrice(amount) {
-    return '€ ' + amount.toFixed(2).replace('.', ',');
+    return '€\u00A0' + amount.toFixed(2).replace('.', ',');
 }
 
 function calculateOrderTotal(order) {

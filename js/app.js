@@ -167,7 +167,7 @@ function calculateTotal() {
 }
 
 function formatPrice(amount) {
-    return '€ ' + amount.toFixed(2).replace('.', ',');
+    return '€\u00A0' + amount.toFixed(2).replace('.', ',');
 }
 
 function getTotalItems() {

@@ -180,7 +180,7 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
             productsHtml += `<tr>
                 <td style="padding:8px;border-bottom:1px solid #eee">${qty}x</td>
                 <td style="padding:8px;border-bottom:1px solid #eee">${PRODUCT_NAMES[product]}</td>
-                <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">€ ${subtotal.toFixed(2).replace('.', ',')}</td>
+                <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">€&nbsp;${subtotal.toFixed(2).replace('.', ',')}</td>
             </tr>`;
         }
     }
@@ -211,7 +211,7 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
                     ${productsHtml}
                     <tr style="font-weight:bold;font-size:18px">
                         <td style="padding:15px 8px 8px 8px" colspan="2">Totaal:</td>
-                        <td style="padding:15px 8px 8px 8px;text-align:right;color:#e67e22">€ ${total.toFixed(2).replace('.', ',')}</td>
+                        <td style="padding:15px 8px 8px 8px;text-align:right;color:#e67e22">€&nbsp;${total.toFixed(2).replace('.', ',')}</td>
                     </tr>
                 </table>
             </div>
