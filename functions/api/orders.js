@@ -220,6 +220,14 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
                 <h3 style="margin:0 0 10px 0;color:#2c3e50">Ophalen</h3>
                 <p style="margin:0"><strong>Datum:</strong> 31 december 2025</p>
                 <p style="margin:5px 0 0 0"><strong>Tijd:</strong> ${orderData.timeslotLabel || orderData.timeslot}</p>
+                <p style="margin:10px 0 0 0"><strong>Adres:</strong></p>
+                <p style="margin:5px 0 0 0">Camí dels Magros 128<br>03724 Teulada (Moraira), Alicante</p>
+                <p style="margin:15px 0 0 0">
+                    <a href="https://maps.google.com/?q=38.6919,-0.1264"
+                       style="display:inline-block;background:#e67e22;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold">
+                        📍 Open in Google Maps
+                    </a>
+                </p>
             </div>
 
             <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:20px;margin:20px 0;text-align:center">
