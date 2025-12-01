@@ -1088,8 +1088,37 @@ function renderTimeslotTotals() {
     const container = document.getElementById('timeslotTotals');
     const byTimeslot = {};
 
+    // Helper function to convert timeslot ID to readable label
+    function getTimeslotLabel(timeslotId, timeslotLabel) {
+        // If we already have a label, use it
+        if (timeslotLabel && !timeslotLabel.startsWith('slot_')) {
+            return timeslotLabel;
+        }
+
+        // Otherwise convert slot_HHMM format to HH:MM - HH:MM
+        if (timeslotId && timeslotId.startsWith('slot_')) {
+            const time = timeslotId.replace('slot_', '');
+            const hour = time.substring(0, 2);
+            const minute = time.substring(2, 4);
+            const startTime = `${hour}:${minute}`;
+
+            // Calculate end time (15 minutes later)
+            let endHour = parseInt(hour);
+            let endMinute = parseInt(minute) + 15;
+            if (endMinute >= 60) {
+                endHour++;
+                endMinute -= 60;
+            }
+            const endTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+
+            return `${startTime} - ${endTime}`;
+        }
+
+        return timeslotId || 'Onbekend tijdslot';
+    }
+
     orders.forEach(order => {
-        const slot = order.timeslotLabel || order.timeslot;
+        const slot = getTimeslotLabel(order.timeslot, order.timeslotLabel);
         if (!byTimeslot[slot]) {
             byTimeslot[slot] = {
                 orders: 0,

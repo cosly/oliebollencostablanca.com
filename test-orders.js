@@ -1,11 +1,13 @@
-const { chromium } = require('playwright');
+const { chromium } = require('@playwright/test');
 
-async function placeOrder(page, orderNumber) {
+async function placeOrder(page, orderNumber, isFirstOrder = false) {
     console.log(`\n🎯 Placing order ${orderNumber}/5...`);
 
-    // Go to homepage
-    await page.goto('http://localhost:8081');
-    await page.waitForLoadState('networkidle');
+    // Only go to homepage for first order
+    if (isFirstOrder) {
+        await page.goto('http://localhost:8081');
+        await page.waitForLoadState('networkidle');
+    }
 
     // Step 1: Select products
     console.log('  📦 Step 1: Selecting products...');
@@ -17,19 +19,20 @@ async function placeOrder(page, orderNumber) {
 
     // Click + buttons to add products
     for (let i = 0; i < krenten; i++) {
-        await page.click('button[data-product="oliebol_krenten"][data-action="increase"]');
+        await page.click('button.qty-btn.plus[data-product="oliebol_krenten"]');
     }
     for (let i = 0; i < naturel; i++) {
-        await page.click('button[data-product="oliebol_naturel"][data-action="increase"]');
+        await page.click('button.qty-btn.plus[data-product="oliebol_naturel"]');
     }
     for (let i = 0; i < appel; i++) {
-        await page.click('button[data-product="appelbeignet"][data-action="increase"]');
+        await page.click('button.qty-btn.plus[data-product="appelbeignet"]');
     }
 
     console.log(`  ✓ Added ${krenten} krenten, ${naturel} naturel, ${appel} appelbeignets`);
 
-    // Click next to go to step 2
-    await page.click('button:has-text("Vul gegevens in")');
+    // Wait for button to be enabled and click to go to step 2
+    await page.waitForSelector('button#toStep2:not([disabled])', { timeout: 5000 });
+    await page.click('button#toStep2');
     await page.waitForTimeout(1000); // Wait for timeslots to load
 
     // Step 2: Select timeslot
@@ -42,17 +45,19 @@ async function placeOrder(page, orderNumber) {
     console.log('  ✓ Selected timeslot');
 
     // Click next to go to step 3
-    await page.click('button#nextToContact');
+    await page.waitForSelector('button#toStep3:not([disabled])', { timeout: 5000 });
+    await page.click('button#toStep3');
 
     // Step 3: Fill in customer details
     console.log('  📝 Step 3: Filling customer details...');
-    await page.fill('input[name="name"]', `Test Klant ${orderNumber}`);
+    await page.fill('input[name="naam"]', `Test Klant ${orderNumber}`);
     await page.fill('input[name="email"]', `test${orderNumber}@example.com`);
-    await page.fill('input[name="phone"]', `0612345${String(orderNumber).padStart(3, '0')}`);
+    await page.fill('input[name="telefoon"]', `0612345${String(orderNumber).padStart(3, '0')}`);
     console.log('  ✓ Filled customer details');
 
     // Click next to go to step 4
-    await page.click('button#nextToReview');
+    await page.waitForSelector('button#toStep4:not([disabled])', { timeout: 5000 });
+    await page.click('button#toStep4');
 
     // Step 4: Review and submit
     console.log('  ✅ Step 4: Submitting order...');
@@ -60,13 +65,20 @@ async function placeOrder(page, orderNumber) {
     await page.click('button#submitOrder');
 
     // Wait for success page
-    await page.waitForSelector('.success-container, h1:has-text("Gelukt")', { timeout: 10000 });
+    await page.waitForSelector('.confirmation-icon', { timeout: 10000 });
 
-    // Get order number from success page
-    const orderNumberText = await page.locator('.order-number, text=/OB-/').first().textContent();
+    // Get order number from success page - look for "Bestelnummer: OB-XXXXXX" pattern
+    const orderNumberElement = await page.locator('text=/Bestelnummer:.*OB-/').first();
+    const orderNumberText = (await orderNumberElement.textContent()).match(/OB-\w+/)[0];
     console.log(`  🎉 Order placed successfully: ${orderNumberText}`);
 
     return orderNumberText;
+}
+
+async function startNewOrder(page) {
+    // Click "Nieuwe bestelling plaatsen" button
+    await page.click('button:has-text("Nieuwe bestelling plaatsen")');
+    await page.waitForLoadState('networkidle');
 }
 
 async function main() {
@@ -84,11 +96,13 @@ async function main() {
 
     try {
         for (let i = 1; i <= 5; i++) {
-            const orderNumber = await placeOrder(page, i);
+            const orderNumber = await placeOrder(page, i, i === 1);
             orderNumbers.push(orderNumber);
 
-            // Small delay between orders
-            await page.waitForTimeout(2000);
+            // Start new order if not the last one
+            if (i < 5) {
+                await startNewOrder(page);
+            }
         }
 
         console.log('\n✨ All 5 orders placed successfully!');

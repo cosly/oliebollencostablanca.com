@@ -18,6 +18,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "nodemailer": "^7.0.11",
     "wrangler": "^4.51.0"
   }
