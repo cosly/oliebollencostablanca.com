@@ -1,7 +1,21 @@
 const { chromium } = require('@playwright/test');
 
+// Realistische Nederlandse test personen
+const TEST_CUSTOMERS = [
+    { naam: 'Jan de Vries', email: 'jan.devries@gmail.com', telefoon: '+34 612 345 678' },
+    { naam: 'Maria Jansen', email: 'maria.jansen@hotmail.com', telefoon: '+34 623 456 789' },
+    { naam: 'Peter van Dam', email: 'p.vandam@outlook.com', telefoon: '+34 634 567 890' },
+    { naam: 'Sophie Bakker', email: 'sophie.bakker@yahoo.com', telefoon: '+34 645 678 901' },
+    { naam: 'Thomas Visser', email: 'thomas.visser@gmail.com', telefoon: '+34 656 789 012' },
+    { naam: 'Emma Hendriks', email: 'emma.hendriks@hotmail.com', telefoon: '+34 667 890 123' },
+    { naam: 'Luuk Vermeulen', email: 'luuk.vermeulen@outlook.com', telefoon: '+34 678 901 234' },
+    { naam: 'Lisa Mulder', email: 'lisa.mulder@gmail.com', telefoon: '+34 689 012 345' },
+    { naam: 'Daan Smit', email: 'daan.smit@yahoo.com', telefoon: '+34 690 123 456' },
+    { naam: 'Anne de Boer', email: 'anne.deboer@hotmail.com', telefoon: '+34 601 234 567' }
+];
+
 async function placeOrder(page, orderNumber, isFirstOrder = false) {
-    console.log(`\n🎯 Placing order ${orderNumber}/5...`);
+    console.log(`\n🎯 Placing order ${orderNumber}/10...`);
 
     // Only go to homepage for first order
     if (isFirstOrder) {
@@ -50,10 +64,11 @@ async function placeOrder(page, orderNumber, isFirstOrder = false) {
 
     // Step 3: Fill in customer details
     console.log('  📝 Step 3: Filling customer details...');
-    await page.fill('input[name="naam"]', `Test Klant ${orderNumber}`);
-    await page.fill('input[name="email"]', `test${orderNumber}@example.com`);
-    await page.fill('input[name="telefoon"]', `0612345${String(orderNumber).padStart(3, '0')}`);
-    console.log('  ✓ Filled customer details');
+    const customer = TEST_CUSTOMERS[orderNumber - 1];
+    await page.fill('input[name="naam"]', customer.naam);
+    await page.fill('input[name="email"]', customer.email);
+    await page.fill('input[name="telefoon"]', customer.telefoon);
+    console.log(`  ✓ Filled customer details (${customer.naam})`);
 
     // Click next to go to step 4
     await page.waitForSelector('button#toStep4:not([disabled])', { timeout: 5000 });
@@ -82,7 +97,7 @@ async function startNewOrder(page) {
 }
 
 async function main() {
-    console.log('🚀 Starting Playwright test - placing 5 orders...\n');
+    console.log('🚀 Starting Playwright test - placing 10 orders...\n');
 
     const browser = await chromium.launch({
         headless: false, // Set to true if you want to run without UI
@@ -95,17 +110,17 @@ async function main() {
     const orderNumbers = [];
 
     try {
-        for (let i = 1; i <= 5; i++) {
+        for (let i = 1; i <= 10; i++) {
             const orderNumber = await placeOrder(page, i, i === 1);
             orderNumbers.push(orderNumber);
 
             // Start new order if not the last one
-            if (i < 5) {
+            if (i < 10) {
                 await startNewOrder(page);
             }
         }
 
-        console.log('\n✨ All 5 orders placed successfully!');
+        console.log('\n✨ All 10 orders placed successfully!');
         console.log('📋 Order numbers:', orderNumbers.join(', '));
 
     } catch (error) {
