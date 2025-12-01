@@ -23,7 +23,7 @@ function corsHeaders(request) {
 }
 
 // ===== Auth Utilities =====
-const CODE_DURATION = 10 * 60 * 1000; // 10 minutes
+const CODE_DURATION = 24 * 60 * 60 * 1000; // 24 hours (was 10 minutes)
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 async function createHmac(data, secret) {

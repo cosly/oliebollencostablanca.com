@@ -24,7 +24,8 @@ function corsHeaders(request) {
 
 // ===== Auth Utilities =====
 function generateLoginCode() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    // Fixed code for easier development/testing
+    return '334488';
 }
 
 async function createHmac(data, secret) {
