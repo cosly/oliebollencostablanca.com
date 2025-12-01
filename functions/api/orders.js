@@ -221,7 +221,7 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
                 <p style="margin:0"><strong>Datum:</strong> 31 december 2025</p>
                 <p style="margin:5px 0 0 0"><strong>Tijd:</strong> ${orderData.timeslotLabel || orderData.timeslot}</p>
                 <p style="margin:10px 0 0 0"><strong>Adres:</strong></p>
-                <p style="margin:5px 0 0 0">Camí dels Magros 128<br>03724 Teulada (Moraira), Alicante</p>
+                <p style="margin:5px 0 0 0">Calle Meliso, 21<br>03739 Jávea, Alicante</p>
                 <p style="margin:15px 0 0 0">
                     <a href="https://maps.app.goo.gl/EUdC5Mbwmx3LsMTL8"
                        style="display:inline-block;background:#e67e22;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold">
