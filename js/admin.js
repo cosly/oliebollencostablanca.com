@@ -1741,6 +1741,66 @@ async function loadConfig() {
     }
 }
 
+async function validateCapacityChange(newCapacities) {
+    // Get current capacity usage from product_capacity table
+    try {
+        const response = await fetch(`${API_BASE}/product-capacity`, {
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            console.error('Failed to fetch capacity data');
+            return { valid: true }; // Allow if we can't check
+        }
+
+        const capacityData = await response.json();
+        const issues = [];
+
+        // Check each hour block
+        capacityData.forEach(block => {
+            const krentenUsage = (block.used_krenten / newCapacities.krenten) * 100;
+            const naturelUsage = (block.used_naturel / newCapacities.naturel) * 100;
+            const appelbeignetUsage = (block.used_appelbeignet / newCapacities.appelbeignet) * 100;
+
+            if (krentenUsage > 100) {
+                issues.push({
+                    hour: block.hour_block,
+                    product: 'Oliebollen met krenten',
+                    used: block.used_krenten,
+                    newCapacity: newCapacities.krenten,
+                    percentage: Math.round(krentenUsage)
+                });
+            }
+            if (naturelUsage > 100) {
+                issues.push({
+                    hour: block.hour_block,
+                    product: 'Oliebollen naturel',
+                    used: block.used_naturel,
+                    newCapacity: newCapacities.naturel,
+                    percentage: Math.round(naturelUsage)
+                });
+            }
+            if (appelbeignetUsage > 100) {
+                issues.push({
+                    hour: block.hour_block,
+                    product: 'Appelbeignets',
+                    used: block.used_appelbeignet,
+                    newCapacity: newCapacities.appelbeignet,
+                    percentage: Math.round(appelbeignetUsage)
+                });
+            }
+        });
+
+        return {
+            valid: issues.length === 0,
+            issues: issues
+        };
+    } catch (error) {
+        console.error('Validation error:', error);
+        return { valid: true }; // Allow if validation fails
+    }
+}
+
 async function saveConfig() {
     const configData = {
         day_start_time: document.getElementById('dayStartTime').value,
@@ -1750,6 +1810,25 @@ async function saveConfig() {
         default_capacity_naturel: document.getElementById('capNaturel').value,
         default_capacity_appelbeignet: document.getElementById('capAppelbeignet').value
     };
+
+    // Validate capacity changes
+    const validation = await validateCapacityChange({
+        krenten: parseInt(configData.default_capacity_krenten),
+        naturel: parseInt(configData.default_capacity_naturel),
+        appelbeignet: parseInt(configData.default_capacity_appelbeignet)
+    });
+
+    if (!validation.valid) {
+        // Show detailed error message
+        let errorMsg = 'Capaciteit te laag voor bestaande bestellingen:\n\n';
+        validation.issues.forEach(issue => {
+            errorMsg += `• ${issue.product} (${issue.hour}:00): ${issue.used} geboekt, nieuwe capaciteit ${issue.newCapacity} (${issue.percentage}%)\n`;
+        });
+
+        showNotification('Capaciteit te laag! Zie console voor details.', 'error');
+        alert(errorMsg);
+        return;
+    }
 
     try {
         const response = await fetch(`${API_BASE}/config`, {
