@@ -1359,18 +1359,19 @@ function getTimeslotStatus(order) {
 
 function checkTimeAgainstSlot(startTime, endTime) {
     const now = new Date();
-    const currentHours = now.getHours();
-    const currentMinutes = now.getMinutes();
-    const currentTimeMinutes = currentHours * 60 + currentMinutes;
 
+    // Event date: 31 December 2025
+    const eventDate = new Date(2025, 11, 31); // Month is 0-indexed (11 = December)
     const [startHour, startMin] = startTime.split(':').map(Number);
     const [endHour, endMin] = endTime.split(':').map(Number);
-    const startTimeMinutes = startHour * 60 + startMin;
-    const endTimeMinutes = endHour * 60 + endMin;
 
-    // Calculate difference in minutes
-    const minutesUntilStart = startTimeMinutes - currentTimeMinutes;
-    const minutesUntilEnd = endTimeMinutes - currentTimeMinutes;
+    // Create full datetime objects for timeslot start and end on event date
+    const slotStart = new Date(2025, 11, 31, startHour, startMin);
+    const slotEnd = new Date(2025, 11, 31, endHour, endMin);
+
+    // Calculate difference in minutes from now to timeslot times
+    const minutesUntilStart = Math.floor((slotStart - now) / 1000 / 60);
+    const minutesUntilEnd = Math.floor((slotEnd - now) / 1000 / 60);
 
     // Define thresholds
     const EARLY_THRESHOLD = 15; // More than 15 min early is "te vroeg"
