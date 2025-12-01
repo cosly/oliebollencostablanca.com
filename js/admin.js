@@ -557,7 +557,7 @@ function showAutocompleteResults(query) {
                     <span class="autocomplete-customer">${highlightMatch(escapeHtml(order.customer?.naam || ''), query)}</span>
                 </div>
                 <div class="autocomplete-item-details">
-                    <span class="autocomplete-timeslot">${escapeHtml(order.timeslotLabel || order.timeslot)}</span>
+                    <span class="autocomplete-timeslot">${escapeHtml(formatTimeslotLabel(order.timeslot, order.timeslotLabel))}</span>
                     <span class="autocomplete-total">${formatPrice(total)}</span>
                     <span class="autocomplete-status ${statusClass}">${statusLabel}</span>
                 </div>
@@ -719,7 +719,7 @@ function renderOrders() {
             </div>
             <div class="order-card-body">
                 <div class="order-customer">${escapeHtml(order.customer.naam)}</div>
-                <div class="order-timeslot">${escapeHtml(order.timeslotLabel || order.timeslot)}</div>
+                <div class="order-timeslot">${escapeHtml(formatTimeslotLabel(order.timeslot, order.timeslotLabel))}</div>
                 <div class="order-items">${escapeHtml(formatOrderItems(order.products))}</div>
                 <div class="order-total">${formatPrice(order.total || calculateOrderTotal(order))}</div>
                 <div class="order-actions">
@@ -769,6 +769,35 @@ function updateOrderCounts() {
         orders.filter(o => o.status === 'noshow').length;
 }
 
+// Helper function to convert slot_HHMM to readable label
+function formatTimeslotLabel(timeslotId, timeslotLabel) {
+    // If we already have a clean label (not starting with slot_), use it
+    if (timeslotLabel && !timeslotLabel.startsWith('slot_')) {
+        return timeslotLabel;
+    }
+
+    // Otherwise convert slot_HHMM format to HH:MM - HH:MM
+    if (timeslotId && timeslotId.startsWith('slot_')) {
+        const time = timeslotId.replace('slot_', '');
+        const hour = time.substring(0, 2);
+        const minute = time.substring(2, 4);
+        const startTime = `${hour}:${minute}`;
+
+        // Calculate end time (15 minutes later)
+        let endHour = parseInt(hour);
+        let endMinute = parseInt(minute) + 15;
+        if (endMinute >= 60) {
+            endHour++;
+            endMinute -= 60;
+        }
+        const endTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+
+        return `${startTime} - ${endTime}`;
+    }
+
+    return timeslotId || 'Onbekend tijdslot';
+}
+
 function populateTimeslotFilter() {
     const select = document.getElementById('timeslotFilter');
     const existingSlots = [...new Set(orders.map(o => o.timeslot))];
@@ -776,7 +805,7 @@ function populateTimeslotFilter() {
     select.innerHTML = '<option value="">Alle tijdsloten</option>';
     existingSlots.sort().forEach(slot => {
         const order = orders.find(o => o.timeslot === slot);
-        const label = order?.timeslotLabel || slot;
+        const label = formatTimeslotLabel(slot, order?.timeslotLabel);
         select.innerHTML += `<option value="${slot}">${label}</option>`;
     });
 

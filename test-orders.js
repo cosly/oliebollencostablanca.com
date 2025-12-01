@@ -1,21 +1,41 @@
 const { chromium } = require('@playwright/test');
 
 // Realistische Nederlandse test personen
-const TEST_CUSTOMERS = [
-    { naam: 'Jan de Vries', email: 'jan.devries@gmail.com', telefoon: '+34 612 345 678' },
-    { naam: 'Maria Jansen', email: 'maria.jansen@hotmail.com', telefoon: '+34 623 456 789' },
-    { naam: 'Peter van Dam', email: 'p.vandam@outlook.com', telefoon: '+34 634 567 890' },
-    { naam: 'Sophie Bakker', email: 'sophie.bakker@yahoo.com', telefoon: '+34 645 678 901' },
-    { naam: 'Thomas Visser', email: 'thomas.visser@gmail.com', telefoon: '+34 656 789 012' },
-    { naam: 'Emma Hendriks', email: 'emma.hendriks@hotmail.com', telefoon: '+34 667 890 123' },
-    { naam: 'Luuk Vermeulen', email: 'luuk.vermeulen@outlook.com', telefoon: '+34 678 901 234' },
-    { naam: 'Lisa Mulder', email: 'lisa.mulder@gmail.com', telefoon: '+34 689 012 345' },
-    { naam: 'Daan Smit', email: 'daan.smit@yahoo.com', telefoon: '+34 690 123 456' },
-    { naam: 'Anne de Boer', email: 'anne.deboer@hotmail.com', telefoon: '+34 601 234 567' }
+const FIRST_NAMES = [
+    'Jan', 'Maria', 'Peter', 'Sophie', 'Thomas', 'Emma', 'Luuk', 'Lisa', 'Daan', 'Anne',
+    'Lars', 'Eva', 'Bram', 'Fleur', 'Sem', 'Julia', 'Max', 'Saar', 'Tim', 'Lotte',
+    'Finn', 'Noa', 'Milan', 'Isa', 'Thijs', 'Lynn', 'Jesse', 'Mila', 'Lucas', 'Tess',
+    'Ruben', 'Evi', 'Stijn', 'Sara', 'Lars', 'Lieke', 'Jasper', 'Nina', 'Tom', 'Roos'
 ];
 
+const LAST_NAMES = [
+    'de Vries', 'Jansen', 'van Dam', 'Bakker', 'Visser', 'Hendriks', 'Vermeulen', 'Mulder', 'Smit', 'de Boer',
+    'Dekker', 'van Dijk', 'de Groot', 'Peters', 'van Leeuwen', 'de Jong', 'Willems', 'van den Berg', 'Jacobs', 'van der Meer',
+    'Meijer', 'van den Heuvel', 'Koning', 'Vos', 'Brouwer', 'Schouten', 'van Houten', 'Koster', 'Prins', 'Blom',
+    'van der Linden', 'Huisman', 'Ruiter', 'Kuipers', 'van Es', 'Scholten', 'Bosch', 'van der Heijden', 'Sanders', 'Dijkstra'
+];
+
+const EMAIL_PROVIDERS = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'ziggo.nl'];
+
+// Generate 150 unique customers
+const TEST_CUSTOMERS = [];
+for (let i = 0; i < 150; i++) {
+    const firstName = FIRST_NAMES[i % FIRST_NAMES.length];
+    const lastName = LAST_NAMES[Math.floor(i / FIRST_NAMES.length) % LAST_NAMES.length];
+    const fullName = `${firstName} ${lastName}`;
+    const emailName = `${firstName.toLowerCase()}.${lastName.toLowerCase().replace(/ /g, '')}${i > 39 ? i : ''}`;
+    const provider = EMAIL_PROVIDERS[i % EMAIL_PROVIDERS.length];
+    const phoneNumber = `+34 ${600 + Math.floor(i / 10)} ${String(i).padStart(3, '0')} ${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
+
+    TEST_CUSTOMERS.push({
+        naam: fullName,
+        email: `${emailName}@${provider}`,
+        telefoon: phoneNumber
+    });
+}
+
 async function placeOrder(page, orderNumber, isFirstOrder = false) {
-    console.log(`\n🎯 Placing order ${orderNumber}/10...`);
+    console.log(`\n🎯 Placing order ${orderNumber}/150...`);
 
     // Only go to homepage for first order
     if (isFirstOrder) {
@@ -97,31 +117,43 @@ async function startNewOrder(page) {
 }
 
 async function main() {
-    console.log('🚀 Starting Playwright test - placing 10 orders...\n');
+    console.log('🚀 Starting Playwright test - placing 150 orders...\n');
+    console.log('⚠️  This will take approximately 15-20 minutes to complete.\n');
 
     const browser = await chromium.launch({
-        headless: false, // Set to true if you want to run without UI
-        slowMo: 100 // Slow down by 100ms to see what's happening
+        headless: true, // Run headless for speed
+        slowMo: 50 // Speed up to 50ms
     });
 
     const context = await browser.newContext();
     const page = await context.newPage();
 
     const orderNumbers = [];
+    const startTime = Date.now();
 
     try {
-        for (let i = 1; i <= 10; i++) {
+        for (let i = 1; i <= 150; i++) {
             const orderNumber = await placeOrder(page, i, i === 1);
             orderNumbers.push(orderNumber);
 
+            // Show progress every 10 orders
+            if (i % 10 === 0) {
+                const elapsed = ((Date.now() - startTime) / 1000 / 60).toFixed(1);
+                const avgTime = (Date.now() - startTime) / i / 1000;
+                const remaining = ((150 - i) * avgTime / 60).toFixed(1);
+                console.log(`\n📊 Progress: ${i}/150 orders (${(i/150*100).toFixed(0)}%) - ${elapsed}min elapsed, ~${remaining}min remaining\n`);
+            }
+
             // Start new order if not the last one
-            if (i < 10) {
+            if (i < 150) {
                 await startNewOrder(page);
             }
         }
 
-        console.log('\n✨ All 10 orders placed successfully!');
-        console.log('📋 Order numbers:', orderNumbers.join(', '));
+        const totalTime = ((Date.now() - startTime) / 1000 / 60).toFixed(1);
+        console.log(`\n✨ All 150 orders placed successfully in ${totalTime} minutes!`);
+        console.log(`📋 First 10 order numbers: ${orderNumbers.slice(0, 10).join(', ')}...`);
+        console.log(`📋 Last 10 order numbers: ${orderNumbers.slice(-10).join(', ')}`);
 
     } catch (error) {
         console.error('\n❌ Error placing order:', error.message);
