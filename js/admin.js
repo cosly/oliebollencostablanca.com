@@ -249,6 +249,10 @@ function initTabs() {
                 loadOrders();
             } else if (tabId === 'totals') {
                 updateTotals();
+            } else if (tabId === 'capacity') {
+                loadConfig();
+                loadGeneratedTimeslots();
+                loadCapacity();
             }
         });
     });
@@ -1879,17 +1883,6 @@ function showNotification(message, type) {
 
 // Initialize config management
 function initConfigManagement() {
-    const capacityTab = document.querySelector('[data-tab="capacity"]');
-    if (capacityTab) {
-        capacityTab.addEventListener('click', function() {
-            setTimeout(() => {
-                loadConfig();
-                loadGeneratedTimeslots();
-                loadCapacity();
-            }, 100);
-        });
-    }
-
     const saveBtn = document.getElementById('saveConfigBtn');
     if (saveBtn) {
         saveBtn.addEventListener('click', saveConfig);
