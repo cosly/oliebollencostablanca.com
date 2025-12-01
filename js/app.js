@@ -236,13 +236,19 @@ async function loadTimeslots() {
     try {
         // Try to fetch from API
         const response = await fetch(API_BASE + '/timeslots');
+        console.log('Timeslots API response:', response.status, response.ok);
         if (response.ok) {
             const data = await response.json();
+            console.log('Timeslots data:', data);
             const timeslots = data.timeslots || data; // Support both {timeslots: [...]} and raw array
+            console.log('Parsed timeslots:', timeslots.length, timeslots[0]);
             renderTimeslots(timeslots);
             return;
+        } else {
+            console.error('API response not OK:', response.status, response.statusText);
         }
     } catch (e) {
+        console.error('API fetch failed:', e);
         console.log('API niet beschikbaar, gebruik demo tijdsloten');
     }
 
@@ -271,11 +277,14 @@ function generateDemoTimeslots() {
             const booked = Math.floor(Math.random() * 160);
             const available = Math.max(0, capacity - booked);
 
+            const hourBlock = `${hour.toString().padStart(2, '0')}:00-${(hour + 1).toString().padStart(2, '0')}:00`;
+
             slots.push({
                 id: `slot_${time.replace(':', '')}`,
                 start: time,
                 end: endTime,
                 label: `${time} - ${endTime}`,
+                hourBlock: hourBlock,
                 products: {
                     'oliebol_krenten': {
                         capacity: 50,
