@@ -171,23 +171,8 @@ export async function onRequestPost(context) {
 }
 
 async function sendConfirmationEmail(env, customer, orderNumber, orderData, total) {
-    // Use Cloudflare's QR code generator API with base64 output
-    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${orderNumber}&format=png`;
-
-    let qrCodeDataUrl = qrApiUrl; // Fallback to external URL
-
-    // Try to fetch and convert to base64
-    try {
-        const qrResponse = await fetch(qrApiUrl);
-        if (qrResponse.ok) {
-            const qrBuffer = await qrResponse.arrayBuffer();
-            const qrBase64 = btoa(String.fromCharCode(...new Uint8Array(qrBuffer)));
-            qrCodeDataUrl = `data:image/png;base64,${qrBase64}`;
-        }
-    } catch (error) {
-        console.error('Failed to generate base64 QR code:', error);
-        // Keep using external URL as fallback
-    }
+    // Use QR Server API - works reliably in all email clients
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${orderNumber}&format=png`;
 
     let productsHtml = '';
     for (const [product, qty] of Object.entries(orderData.products)) {
@@ -241,7 +226,7 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
             <p style="font-size:14px;margin:0 0 15px 0">Je bestelling is ontvangen! Hieronder vind je de details en je QR-code.</p>
 
             <div class="qr-section" style="text-align:center;margin:16px 0;padding:14px;background:#f8f9fa;border-radius:8px">
-                <img src="${qrCodeDataUrl}" alt="QR Code" width="160" height="160" style="border-radius:8px;display:block;margin:0 auto;max-width:100%">
+                <img src="${qrCodeUrl}" alt="QR Code" width="160" height="160" style="border-radius:8px;display:block;margin:0 auto;max-width:100%">
                 <p class="order-number" style="margin:12px 0 0 0;font-size:18px;font-weight:bold;color:#2c3e50">${orderNumber}</p>
                 <p style="margin:4px 0 0 0;font-size:11px;color:#666">Toon deze code bij ophalen</p>
                 <p style="margin:12px 0 0 0">
