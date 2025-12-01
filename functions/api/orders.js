@@ -188,7 +188,11 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
     const emailHtml = `
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"></head>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+</head>
 <body style="font-family:Arial,sans-serif;margin:0;padding:0;background:#f5f5f5">
     <div style="max-width:500px;margin:0 auto;padding:20px">
         <div style="background:#e67e22;color:white;padding:30px;text-align:center;border-radius:12px 12px 0 0">
@@ -200,14 +204,15 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
             <p>Je bestelling is ontvangen! Hieronder vind je de details en je QR-code.</p>
 
             <div style="text-align:center;margin:30px 0;padding:20px;background:#f8f9fa;border-radius:8px">
-                <img src="${qrCodeUrl}" alt="QR Code" width="180" height="180" style="border-radius:8px">
+                <img src="${qrCodeUrl}" alt="QR Code" width="180" height="180" style="border-radius:8px;display:block;margin:0 auto;max-width:100%">
                 <p style="margin:15px 0 0 0;font-size:20px;font-weight:bold;color:#2c3e50">${orderNumber}</p>
                 <p style="margin:5px 0 0 0;font-size:12px;color:#666">Toon deze code bij ophalen</p>
+                <p style="margin:10px 0 0 0;font-size:11px;color:#999;font-style:italic">Zie je de QR code niet? Toon dit ordernummer: ${orderNumber}</p>
             </div>
 
             <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0">
                 <h3 style="margin:0 0 15px 0;color:#2c3e50">Je bestelling</h3>
-                <table style="width:100%;border-collapse:collapse">
+                <table style="width:100%;border-collapse:collapse" cellpadding="0" cellspacing="0" border="0">
                     ${productsHtml}
                     <tr style="font-weight:bold;font-size:18px">
                         <td style="padding:15px 8px 8px 8px" colspan="2">Totaal:</td>
