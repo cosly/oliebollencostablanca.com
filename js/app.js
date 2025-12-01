@@ -41,7 +41,7 @@ const API_BASE = '/api';
 document.addEventListener('DOMContentLoaded', () => {
     initQuantityButtons();
     initNavigation();
-    loadTimeslots();
+    // Don't load timeslots here - they're loaded when user goes to step 2
     initFormValidation();
     checkPrefillParams();
     initDrawer();
@@ -314,6 +314,10 @@ function renderTimeslots(timeslots) {
     loadedTimeslots = timeslots;
 
     const grid = document.getElementById('timeslotGrid');
+    if (!grid) {
+        console.log('Timeslot grid not found, skipping render');
+        return;
+    }
     grid.innerHTML = '';
 
     // Group timeslots by hour for displaying capacity bars
