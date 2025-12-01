@@ -11,8 +11,8 @@ const PRICES = {
 };
 
 const PRODUCT_NAMES = {
-    oliebol_krenten: 'Oliebollen met krenten',
-    oliebol_naturel: 'Oliebollen zonder krenten',
+    oliebol_krenten: 'Oliebollen met rozijnen',
+    oliebol_naturel: 'Oliebollen zonder rozijnen',
     appelbeignet: 'Appelbeignets'
 };
 

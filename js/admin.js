@@ -20,8 +20,8 @@ let authToken = null;
 
 // Product info
 const PRODUCT_NAMES = {
-    oliebol_krenten: 'Oliebollen met krenten',
-    oliebol_naturel: 'Oliebollen zonder krenten',
+    oliebol_krenten: 'Oliebollen met rozijnen',
+    oliebol_naturel: 'Oliebollen zonder rozijnen',
     appelbeignet: 'Appelbeignets'
 };
 
@@ -864,8 +864,8 @@ async function renderTimeslotOverview() {
                 <div class="timeslot-products">
                     ${data.krenten > 0 ? `
                         <div class="product-row">
-                            <span class="product-name-small">🔴 Met krenten</span>
-                            <span class="product-count-small">${data.krenten}</span>
+                            <span class="product-name-small">🔴 Met rozijnen</span>
+                            <parameter name="product-count-small">${data.krenten}</span>
                         </div>
                     ` : ''}
                     ${data.naturel > 0 ? `
@@ -1089,7 +1089,7 @@ function renderCapacityList() {
             <h3>Capaciteit per uur (geldt voor alle tijden)</h3>
             <div class="capacity-inputs">
                 <div class="capacity-input-row">
-                    <span class="product-label" style="color: #ff6b6b">⬤ Krenten</span>
+                    <span class="product-label" style="color: #ff6b6b">⬤ Rozijnen</span>
                     <input type="number" class="global-capacity-input" value="${krenten.capacity}"
                            min="0" max="500" data-product="oliebol_krenten">
                     <span class="capacity-unit">stuks/uur → ${Math.round(krenten.capacity / 2)}/half uur</span>
@@ -1111,7 +1111,7 @@ function renderCapacityList() {
                 Opslaan
             </button>
             <div class="total-stats">
-                Totaal geboekt vandaag: <span style="color: #ff6b6b">${totalKrenten} krenten</span>,
+                Totaal geboekt vandaag: <span style="color: #ff6b6b">${totalKrenten} rozijnen</span>,
                 <span style="color: #4ecdc4">${totalNaturel} naturel</span>,
                 <span style="color: #ffe66d">${totalAppel} appel</span>
             </div>
@@ -1319,7 +1319,7 @@ document.getElementById('exportCsv')?.addEventListener('click', exportToCsv);
 document.getElementById('printList')?.addEventListener('click', () => window.print());
 
 function exportToCsv() {
-    let csv = 'Bestelnummer,Naam,Telefoon,Tijdslot,Krenten,Naturel,Appelbeignet,Totaal,Status\n';
+    let csv = 'Bestelnummer,Naam,Telefoon,Tijdslot,Rozijnen,Naturel,Appelbeignet,Totaal,Status\n';
 
     orders.forEach(o => {
         csv += `${o.orderNumber},${o.customer.naam},${o.customer.telefoon},${o.timeslotLabel || o.timeslot},`;

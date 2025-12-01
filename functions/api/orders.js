@@ -5,8 +5,8 @@ const PRICES = {
 };
 
 const PRODUCT_NAMES = {
-    oliebol_krenten: 'Oliebollen met krenten',
-    oliebol_naturel: 'Oliebollen zonder krenten',
+    oliebol_krenten: 'Oliebollen met rozijnen',
+    oliebol_naturel: 'Oliebollen zonder rozijnen',
     appelbeignet: 'Appelbeignets'
 };
 
@@ -107,8 +107,8 @@ export async function onRequestPost(context) {
 
                 if (quantity > available) {
                     const productNames = {
-                        'oliebol_krenten': 'oliebollen met krenten',
-                        'oliebol_naturel': 'oliebollen zonder krenten',
+                        'oliebol_krenten': 'oliebollen met rozijnen',
+                        'oliebol_naturel': 'oliebollen zonder rozijnen',
                         'appelbeignet': 'appelbeignets'
                     };
                     return Response.json({
