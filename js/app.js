@@ -338,6 +338,13 @@ function renderTimeslots(timeslots) {
 
         for (const [productId, quantity] of Object.entries(orderData.products)) {
             if (quantity > 0) {
+                // Safety check: ensure slot has products data
+                if (!slot.products || !slot.products[productId]) {
+                    hasEnoughCapacity = false;
+                    unavailableProducts.push(productId);
+                    continue;
+                }
+
                 const productCap = slot.products[productId];
                 if (!productCap || productCap.available < quantity) {
                     hasEnoughCapacity = false;
@@ -356,7 +363,7 @@ function renderTimeslots(timeslots) {
         let availText = '';
         if (isUnavailable && unavailableProducts.length > 0) {
             availText = 'Te weinig beschikbaar';
-        } else {
+        } else if (slot.products) {
             // Show mini capacity indicators
             const krenten = slot.products['oliebol_krenten'];
             const naturel = slot.products['oliebol_naturel'];
@@ -367,6 +374,8 @@ function renderTimeslots(timeslots) {
                 <span style="color: #4ecdc4">N: ${naturel ? naturel.available : 0}</span>
                 <span style="color: #ffe66d">A: ${appel ? appel.available : 0}</span>
             </div>`;
+        } else {
+            availText = 'Beschikbaar';
         }
 
         div.innerHTML = `
