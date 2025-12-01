@@ -231,7 +231,7 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
             </div>
 
             <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:20px;margin:20px 0;text-align:center">
-                <p style="margin:0;font-size:16px"><strong>Betaling:</strong> Contant bij ophalen</p>
+                <p style="margin:0;font-size:16px"><strong>Betaling:</strong> Contant</p>
                 <p style="margin:5px 0 0 0;color:#666">Graag gepast betalen!</p>
             </div>
 
