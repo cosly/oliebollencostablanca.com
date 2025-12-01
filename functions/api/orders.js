@@ -207,7 +207,12 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
                 <img src="${qrCodeUrl}" alt="QR Code" width="180" height="180" style="border-radius:8px;display:block;margin:0 auto;max-width:100%">
                 <p style="margin:15px 0 0 0;font-size:20px;font-weight:bold;color:#2c3e50">${orderNumber}</p>
                 <p style="margin:5px 0 0 0;font-size:12px;color:#666">Toon deze code bij ophalen</p>
-                <p style="margin:10px 0 0 0;font-size:11px;color:#999;font-style:italic">Zie je de QR code niet? Toon dit ordernummer: ${orderNumber}</p>
+                <p style="margin:15px 0 0 0">
+                    <a href="https://oliebollencostablanca.com/order.html?order=${orderNumber}"
+                       style="display:inline-block;background:#e67e22;color:white;padding:10px 20px;text-decoration:none;border-radius:6px;font-size:14px">
+                        Zie je geen QR code? Klik hier
+                    </a>
+                </p>
             </div>
 
             <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0">
