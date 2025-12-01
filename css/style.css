@@ -1770,12 +1770,18 @@ footer p {
     padding: 16px;
     box-shadow: var(--shadow);
     border-left: 4px solid var(--primary);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-left-color 0.2s ease;
+    cursor: pointer;
 }
 
 .timeslot-overview-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    border-left-color: var(--primary-dark, #1a252f);
+}
+
+.timeslot-overview-card:active {
+    transform: translateY(-1px);
 }
 
 .timeslot-overview-card.full {

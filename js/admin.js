@@ -826,7 +826,7 @@ function renderTimeslotOverview() {
         const timeLabel = formatTimeslotLabel(slot, orderLabel?.timeslotLabel);
 
         return `
-            <div class="timeslot-overview-card ${cardClass}">
+            <div class="timeslot-overview-card ${cardClass}" data-timeslot="${escapeHtml(slot)}" style="cursor: pointer;">
                 <div class="timeslot-overview-header">
                     <span class="timeslot-time">${escapeHtml(timeLabel)}</span>
                     <span class="timeslot-order-count">${orderCount} ${orderCount === 1 ? 'bestelling' : 'bestellingen'}</span>
@@ -863,6 +863,19 @@ function renderTimeslotOverview() {
             </div>
         `;
     }).join('');
+
+    // Add click handlers to filter by timeslot
+    container.querySelectorAll('.timeslot-overview-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const timeslot = card.dataset.timeslot;
+            const timeslotFilter = document.getElementById('timeslotFilter');
+            timeslotFilter.value = timeslot;
+            renderOrders();
+
+            // Scroll to orders list
+            document.getElementById('ordersList').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
 }
 
 // Helper function to convert slot_HHMM to readable label
