@@ -193,10 +193,10 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
     for (const [product, qty] of Object.entries(orderData.products)) {
         if (qty > 0) {
             const subtotal = qty * PRICES[product];
-            productsHtml += `<tr>
-                <td style="padding:8px;border-bottom:1px solid #eee">${qty}x</td>
-                <td style="padding:8px;border-bottom:1px solid #eee">${PRODUCT_NAMES[product]}</td>
-                <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">€&nbsp;${subtotal.toFixed(2).replace('.', ',')}</td>
+            productsHtml += `<tr class="product-row">
+                <td style="padding:6px 5px;border-bottom:1px solid #eee;font-size:14px">${qty}x</td>
+                <td style="padding:6px 5px;border-bottom:1px solid #eee;font-size:14px">${PRODUCT_NAMES[product]}</td>
+                <td style="padding:6px 5px;border-bottom:1px solid #eee;text-align:right;font-size:14px">€&nbsp;${subtotal.toFixed(2).replace('.', ',')}</td>
             </tr>`;
         }
     }
@@ -208,60 +208,81 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <style>
+        @media only screen and (max-width: 600px) {
+            .container { padding: 8px !important; }
+            .header { padding: 16px !important; }
+            .header h1 { font-size: 18px !important; }
+            .header p { font-size: 13px !important; }
+            .content { padding: 12px !important; }
+            .content p { font-size: 14px !important; }
+            .qr-section { padding: 12px !important; margin: 12px 0 !important; }
+            .qr-section img { width: 140px !important; height: 140px !important; }
+            .order-number { font-size: 16px !important; }
+            .section { padding: 12px !important; margin: 12px 0 !important; }
+            .section h3 { font-size: 14px !important; margin-bottom: 8px !important; }
+            .section p { font-size: 13px !important; }
+            .product-row td { padding: 6px 4px !important; font-size: 13px !important; }
+            .total-row td { padding: 10px 4px 6px 4px !important; font-size: 15px !important; }
+            .btn { padding: 10px 16px !important; font-size: 13px !important; }
+            .payment-notice { padding: 12px !important; margin: 12px 0 !important; }
+            .payment-notice p { font-size: 14px !important; }
+        }
+    </style>
 </head>
 <body style="font-family:Arial,sans-serif;margin:0;padding:0;background:#f5f5f5">
-    <div style="max-width:500px;margin:0 auto;padding:20px">
-        <div style="background:#e67e22;color:white;padding:30px;text-align:center;border-radius:12px 12px 0 0">
-            <h1 style="margin:0;font-size:24px">Oliebollen Costa Blanca</h1>
-            <p style="margin:10px 0 0 0;opacity:0.9">Bedankt voor je bestelling!</p>
+    <div class="container" style="max-width:500px;margin:0 auto;padding:12px">
+        <div class="header" style="background:#e67e22;color:white;padding:20px;text-align:center;border-radius:12px 12px 0 0">
+            <h1 style="margin:0;font-size:20px">Oliebollen Costa Blanca</h1>
+            <p style="margin:8px 0 0 0;opacity:0.9;font-size:14px">Bedankt voor je bestelling!</p>
         </div>
-        <div style="background:white;padding:30px;border-radius:0 0 12px 12px">
-            <p style="font-size:16px">Hoi ${customer.naam.split(' ')[0]},</p>
-            <p>Je bestelling is ontvangen! Hieronder vind je de details en je QR-code.</p>
+        <div class="content" style="background:white;padding:16px;border-radius:0 0 12px 12px">
+            <p style="font-size:15px;margin:0 0 10px 0">Hoi ${customer.naam.split(' ')[0]},</p>
+            <p style="font-size:14px;margin:0 0 15px 0">Je bestelling is ontvangen! Hieronder vind je de details en je QR-code.</p>
 
-            <div style="text-align:center;margin:30px 0;padding:20px;background:#f8f9fa;border-radius:8px">
-                <img src="${qrCodeDataUrl}" alt="QR Code" width="180" height="180" style="border-radius:8px;display:block;margin:0 auto;max-width:100%">
-                <p style="margin:15px 0 0 0;font-size:20px;font-weight:bold;color:#2c3e50">${orderNumber}</p>
-                <p style="margin:5px 0 0 0;font-size:12px;color:#666">Toon deze code bij ophalen</p>
-                <p style="margin:15px 0 0 0">
+            <div class="qr-section" style="text-align:center;margin:16px 0;padding:14px;background:#f8f9fa;border-radius:8px">
+                <img src="${qrCodeDataUrl}" alt="QR Code" width="160" height="160" style="border-radius:8px;display:block;margin:0 auto;max-width:100%">
+                <p class="order-number" style="margin:12px 0 0 0;font-size:18px;font-weight:bold;color:#2c3e50">${orderNumber}</p>
+                <p style="margin:4px 0 0 0;font-size:11px;color:#666">Toon deze code bij ophalen</p>
+                <p style="margin:12px 0 0 0">
                     <a href="https://oliebollencostablanca.com/order.html?order=${orderNumber}"
-                       style="display:inline-block;background:#e67e22;color:white;padding:10px 20px;text-decoration:none;border-radius:6px;font-size:14px">
+                       class="btn" style="display:inline-block;background:#e67e22;color:white;padding:10px 18px;text-decoration:none;border-radius:6px;font-size:13px">
                         Zie je geen QR code? Klik hier
                     </a>
                 </p>
             </div>
 
-            <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0">
-                <h3 style="margin:0 0 15px 0;color:#2c3e50">Je bestelling</h3>
+            <div class="section" style="background:#f8f9fa;border-radius:8px;padding:14px;margin:14px 0">
+                <h3 style="margin:0 0 10px 0;color:#2c3e50;font-size:15px">Je bestelling</h3>
                 <table style="width:100%;border-collapse:collapse" cellpadding="0" cellspacing="0" border="0">
                     ${productsHtml}
-                    <tr style="font-weight:bold;font-size:18px">
-                        <td style="padding:15px 8px 8px 8px" colspan="2">Totaal:</td>
-                        <td style="padding:15px 8px 8px 8px;text-align:right;color:#e67e22">€&nbsp;${total.toFixed(2).replace('.', ',')}</td>
+                    <tr class="total-row" style="font-weight:bold;font-size:16px">
+                        <td style="padding:12px 6px 6px 6px" colspan="2">Totaal:</td>
+                        <td style="padding:12px 6px 6px 6px;text-align:right;color:#e67e22">€&nbsp;${total.toFixed(2).replace('.', ',')}</td>
                     </tr>
                 </table>
             </div>
 
-            <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin:20px 0">
-                <h3 style="margin:0 0 10px 0;color:#2c3e50">Ophalen</h3>
-                <p style="margin:0"><strong>Datum:</strong> 31 december 2025</p>
-                <p style="margin:5px 0 0 0"><strong>Tijd:</strong> ${orderData.timeslotLabel || orderData.timeslot}</p>
-                <p style="margin:10px 0 0 0"><strong>Adres:</strong></p>
-                <p style="margin:5px 0 0 0">Calle Meliso, 21<br>03739 Jávea, Alicante</p>
-                <p style="margin:15px 0 0 0">
+            <div class="section" style="background:#f8f9fa;border-radius:8px;padding:14px;margin:14px 0">
+                <h3 style="margin:0 0 8px 0;color:#2c3e50;font-size:15px">Ophalen</h3>
+                <p style="margin:0;font-size:14px"><strong>Datum:</strong> 31 december 2025</p>
+                <p style="margin:4px 0 0 0;font-size:14px"><strong>Tijd:</strong> ${orderData.timeslotLabel || orderData.timeslot}</p>
+                <p style="margin:8px 0 0 0;font-size:14px"><strong>Adres:</strong></p>
+                <p style="margin:4px 0 0 0;font-size:14px">Calle Meliso, 21<br>03739 Jávea, Alicante</p>
+                <p style="margin:12px 0 0 0">
                     <a href="https://maps.app.goo.gl/EUdC5Mbwmx3LsMTL8"
-                       style="display:inline-block;background:#e67e22;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold">
+                       class="btn" style="display:inline-block;background:#e67e22;color:white;padding:10px 18px;text-decoration:none;border-radius:6px;font-weight:bold;font-size:13px">
                         📍 Open in Google Maps
                     </a>
                 </p>
             </div>
 
-            <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:20px;margin:20px 0;text-align:center">
-                <p style="margin:0;font-size:16px"><strong>Betaling:</strong> Contant</p>
-                <p style="margin:5px 0 0 0;color:#666">Graag gepast betalen!</p>
+            <div class="payment-notice" style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:14px;margin:14px 0;text-align:center">
+                <p style="margin:0;font-size:15px"><strong>Betaling:</strong> Contant</p>
+                <p style="margin:4px 0 0 0;color:#666;font-size:13px">Graag gepast betalen!</p>
             </div>
 
-            <p style="text-align:center;color:#666;margin-top:30px">Tot 31 december!</p>
+            <p style="text-align:center;color:#666;margin-top:20px;font-size:13px">Tot 31 december!</p>
         </div>
     </div>
 </body>
