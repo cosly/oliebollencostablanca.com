@@ -74,6 +74,17 @@ h1, h2, h3 {
     margin-bottom: 4px;
 }
 
+.hero .tagline .location-link {
+    color: white;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: opacity 0.2s;
+}
+
+.hero .tagline .location-link:hover {
+    opacity: 0.8;
+}
+
 .hero .subtitle {
     font-size: 0.95rem;
     opacity: 0.85;
