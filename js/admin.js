@@ -653,6 +653,7 @@ async function loadOrders() {
 
     renderOrders();
     updateOrderCounts();
+    renderTimeslotOverview();
     populateTimeslotFilter();
 }
 
@@ -767,6 +768,101 @@ function updateOrderCounts() {
         orders.filter(o => o.status === 'completed').length;
     document.getElementById('noshowCount').textContent =
         orders.filter(o => o.status === 'noshow').length;
+}
+
+function renderTimeslotOverview() {
+    const container = document.getElementById('timeslotOverview');
+
+    // Group orders by timeslot
+    const timeslotGroups = {};
+    orders.forEach(order => {
+        const slot = order.timeslot;
+        if (!timeslotGroups[slot]) {
+            timeslotGroups[slot] = {
+                orders: [],
+                krenten: 0,
+                naturel: 0,
+                appelbeignet: 0
+            };
+        }
+        timeslotGroups[slot].orders.push(order);
+        timeslotGroups[slot].krenten += order.products.oliebol_krenten || 0;
+        timeslotGroups[slot].naturel += order.products.oliebol_naturel || 0;
+        timeslotGroups[slot].appelbeignet += order.products.appelbeignet || 0;
+    });
+
+    // Sort timeslots chronologically
+    const sortedSlots = Object.keys(timeslotGroups).sort();
+
+    if (sortedSlots.length === 0) {
+        container.innerHTML = '<p class="no-orders">Nog geen bestellingen</p>';
+        return;
+    }
+
+    // Render each timeslot card
+    container.innerHTML = sortedSlots.map(slot => {
+        const data = timeslotGroups[slot];
+        const orderCount = data.orders.length;
+        const totalItems = data.krenten + data.naturel + data.appelbeignet;
+
+        // Calculate capacity percentage (assuming 50 per hour for oliebollen, 30 for appelbeignets)
+        // This is a simplified calculation - you might want to fetch actual capacity from API
+        const maxCapacity = 50; // per hour per product type
+        const capacityUsed = Math.max(data.krenten, data.naturel, data.appelbeignet);
+        const capacityPercentage = Math.min(100, (capacityUsed / maxCapacity) * 100);
+
+        // Determine card status
+        let cardClass = '';
+        let barClass = '';
+        if (capacityPercentage >= 90) {
+            cardClass = 'full';
+            barClass = 'danger';
+        } else if (capacityPercentage >= 70) {
+            cardClass = 'near-full';
+            barClass = 'warning';
+        }
+
+        const orderLabel = orders.find(o => o.timeslot === slot);
+        const timeLabel = formatTimeslotLabel(slot, orderLabel?.timeslotLabel);
+
+        return `
+            <div class="timeslot-overview-card ${cardClass}">
+                <div class="timeslot-overview-header">
+                    <span class="timeslot-time">${escapeHtml(timeLabel)}</span>
+                    <span class="timeslot-order-count">${orderCount} ${orderCount === 1 ? 'bestelling' : 'bestellingen'}</span>
+                </div>
+                <div class="timeslot-products">
+                    ${data.krenten > 0 ? `
+                        <div class="product-row">
+                            <span class="product-name-small">🔴 Met krenten</span>
+                            <span class="product-count-small">${data.krenten}</span>
+                        </div>
+                    ` : ''}
+                    ${data.naturel > 0 ? `
+                        <div class="product-row">
+                            <span class="product-name-small">🟠 Naturel</span>
+                            <span class="product-count-small">${data.naturel}</span>
+                        </div>
+                    ` : ''}
+                    ${data.appelbeignet > 0 ? `
+                        <div class="product-row">
+                            <span class="product-name-small">🟢 Appelbeignets</span>
+                            <span class="product-count-small">${data.appelbeignet}</span>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="timeslot-capacity-bar">
+                    <div class="capacity-bar-label">
+                        <span>Capaciteit</span>
+                        <span>${Math.round(capacityPercentage)}%</span>
+                    </div>
+                    <div class="capacity-bar">
+                        <div class="capacity-bar-fill ${barClass}" style="width: ${capacityPercentage}%"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 // Helper function to convert slot_HHMM to readable label

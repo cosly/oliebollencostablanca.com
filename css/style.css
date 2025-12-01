@@ -1747,6 +1747,127 @@ footer p {
     color: var(--gray-500);
 }
 
+/* Timeslot overview section */
+.timeslot-overview-section {
+    margin-bottom: 24px;
+}
+
+.timeslot-overview-section h3 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    color: var(--dark);
+}
+
+.timeslot-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.timeslot-overview-card {
+    background: var(--white);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--primary);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.timeslot-overview-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.timeslot-overview-card.full {
+    border-left-color: var(--danger);
+    background: #fff5f5;
+}
+
+.timeslot-overview-card.near-full {
+    border-left-color: var(--warning);
+    background: #fffbf0;
+}
+
+.timeslot-overview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.timeslot-time {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.timeslot-order-count {
+    font-size: 0.9rem;
+    color: var(--gray-500);
+    background: var(--gray-100);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+.timeslot-products {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.product-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.product-name-small {
+    color: var(--gray-600);
+}
+
+.product-count-small {
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.timeslot-capacity-bar {
+    margin-top: 10px;
+}
+
+.capacity-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    margin-bottom: 4px;
+}
+
+.capacity-bar {
+    height: 6px;
+    background: var(--gray-200);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.capacity-bar-fill {
+    height: 100%;
+    background: var(--success);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.capacity-bar-fill.warning {
+    background: var(--warning);
+}
+
+.capacity-bar-fill.danger {
+    background: var(--danger);
+}
+
 .order-timeslot {
     font-size: 0.85rem;
     color: var(--gray-500);
