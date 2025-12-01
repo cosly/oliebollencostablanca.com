@@ -2862,3 +2862,15 @@ footer p {
         padding: 16px;
     }
 }
+
+
+/* Hide mobile-only breaks on desktop */
+.mobile-only {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-only {
+        display: inline;
+    }
+}
