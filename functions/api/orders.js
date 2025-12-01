@@ -223,7 +223,7 @@ async function sendConfirmationEmail(env, customer, orderNumber, orderData, tota
                 <p style="margin:10px 0 0 0"><strong>Adres:</strong></p>
                 <p style="margin:5px 0 0 0">Camí dels Magros 128<br>03724 Teulada (Moraira), Alicante</p>
                 <p style="margin:15px 0 0 0">
-                    <a href="https://maps.google.com/?q=38.6919,-0.1264"
+                    <a href="https://maps.app.goo.gl/EUdC5Mbwmx3LsMTL8"
                        style="display:inline-block;background:#e67e22;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold">
                         📍 Open in Google Maps
                     </a>
