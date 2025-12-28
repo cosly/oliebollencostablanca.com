@@ -65,6 +65,23 @@ export async function onRequestPost(context) {
     const { env } = context;
     const data = await context.request.json();
 
+    // Check if sold out mode is enabled
+    try {
+        const soldOutConfig = await env.DB.prepare(
+            `SELECT value FROM config WHERE key = 'sold_out_enabled'`
+        ).first();
+
+        if (soldOutConfig?.value === 'true') {
+            return Response.json({
+                error: 'Bestellingen zijn gesloten',
+                message: 'We zijn helaas uitverkocht voor dit jaar. Probeer het volgend jaar opnieuw!'
+            }, { status: 403 });
+        }
+    } catch (e) {
+        console.error('Failed to check sold out status:', e);
+        // Continue with order if check fails
+    }
+
     if (!data.products || !data.customer || !data.timeslot) {
         return Response.json({ error: 'Missing fields' }, { status: 400 });
     }

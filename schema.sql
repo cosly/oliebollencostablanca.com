@@ -101,6 +101,15 @@ INSERT OR IGNORE INTO product_capacity (hour_block, product_id, capacity, booked
     ('17:00-18:00', 'oliebol_naturel', 50, 0),
     ('17:00-18:00', 'appelbeignet', 30, 0);
 
+-- Newsletter signup table (for next year notifications)
+CREATE TABLE IF NOT EXISTS newsletter (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    opted_in_at TEXT DEFAULT (datetime('now')),
+    ip_address TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
 -- Initialize default configuration
 INSERT OR IGNORE INTO config (key, value, description) VALUES
     ('day_start_time', '10:00', 'Start tijd van de dag voor bestellingen'),
@@ -108,7 +117,10 @@ INSERT OR IGNORE INTO config (key, value, description) VALUES
     ('slot_duration_minutes', '30', 'Duur van elk tijdslot in minuten'),
     ('default_capacity_krenten', '50', 'Standaard capaciteit oliebollen met krenten per uur'),
     ('default_capacity_naturel', '50', 'Standaard capaciteit oliebollen zonder krenten per uur'),
-    ('default_capacity_appelbeignet', '30', 'Standaard capaciteit appelbeignets per uur');
+    ('default_capacity_appelbeignet', '30', 'Standaard capaciteit appelbeignets per uur'),
+    ('sold_out_enabled', 'false', 'Uitverkocht modus aan/uit'),
+    ('sold_out_title', 'Uitverkocht voor 2025!', 'Titel voor uitverkocht pagina'),
+    ('sold_out_message', 'Bedankt voor je interesse! Helaas zijn we voor dit jaar uitverkocht. We hebben simpelweg niet genoeg ingrediënten en tijd om meer bestellingen aan te nemen. Volgend jaar zijn we er weer - meld je aan voor onze jaarlijkse e-mail zodat je niet achter het net vist!', 'Boodschap voor uitverkocht pagina');
 
 -- Create indexes for faster lookups
 CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number);

@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v2.1 - Sold out settings -->
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
@@ -58,6 +59,7 @@
         <button data-tab="orders">Bestellingen</button>
         <button data-tab="capacity">Capaciteit</button>
         <button data-tab="totals">Totalen</button>
+        <button data-tab="settings">Instellingen</button>
     </nav>
 
     <main class="admin-content">
@@ -309,6 +311,83 @@
                 <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
                 <button id="importCsv" class="btn btn-primary">Import CSV</button>
                 <p class="import-hint">Formaat: Naam,Email,Telefoon,Tijdslot,Rozijnen,Naturel,Appelbeignet</p>
+            </div>
+        </section>
+
+        <!-- Settings Tab -->
+        <section id="tab-settings" class="admin-tab">
+            <div class="settings-section">
+                <h2>Uitverkocht Modus</h2>
+                <p class="section-description">Schakel de uitverkocht modus in om nieuwe bestellingen te blokkeren</p>
+
+                <div class="settings-form">
+                    <div class="setting-row toggle-row">
+                        <label class="toggle-label" for="soldOutEnabled">
+                            <span class="toggle-text">Uitverkocht modus</span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="soldOutEnabled">
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </label>
+                        <span class="toggle-status" id="soldOutStatus">Uit</span>
+                    </div>
+
+                    <div class="setting-row">
+                        <label for="soldOutTitle">Titel</label>
+                        <input type="text" id="soldOutTitle" class="form-input" placeholder="Uitverkocht voor 2025!">
+                    </div>
+
+                    <div class="setting-row">
+                        <label for="soldOutMessage">Boodschap</label>
+                        <textarea id="soldOutMessage" class="form-textarea" rows="5" placeholder="Bedankt voor je interesse..."></textarea>
+                    </div>
+
+                    <div class="setting-actions">
+                        <button id="saveSettingsBtn" class="btn btn-primary">Instellingen opslaan</button>
+                    </div>
+                </div>
+
+                <!-- Preview -->
+                <div class="settings-preview">
+                    <h3>Preview</h3>
+                    <div class="preview-container" id="soldOutPreview">
+                        <div class="preview-overlay">
+                            <div class="preview-content">
+                                <h2 id="previewTitle">Uitverkocht voor 2025!</h2>
+                                <p id="previewMessage">Bedankt voor je interesse...</p>
+                                <div class="preview-form">
+                                    <input type="email" placeholder="je@email.com" disabled>
+                                    <label class="preview-checkbox">
+                                        <input type="checkbox" disabled checked>
+                                        <span>Ja, mail mij als de bestellingen weer opengaan</span>
+                                    </label>
+                                    <button class="btn btn-primary" disabled>Aanmelden</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Newsletter Signups -->
+            <div class="settings-section">
+                <h2>Email Aanmeldingen</h2>
+                <p class="section-description">Bezoekers die een melding willen ontvangen volgend jaar</p>
+
+                <div class="newsletter-stats">
+                    <div class="stat-card small">
+                        <div class="stat-value" id="newsletterCount">0</div>
+                        <div class="stat-label">Aanmeldingen</div>
+                    </div>
+                </div>
+
+                <div class="newsletter-actions">
+                    <button id="exportNewsletterBtn" class="btn btn-secondary">Export emails (CSV)</button>
+                </div>
+
+                <div id="newsletterList" class="newsletter-list">
+                    <p class="loading">Aanmeldingen laden...</p>
+                </div>
             </div>
         </section>
     </main>

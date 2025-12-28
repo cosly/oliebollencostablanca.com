@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v2.1 - Sold out overlay -->
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
@@ -43,6 +44,44 @@
     <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js" defer></script>
 </head>
 <body>
+    <!-- Sold Out Overlay -->
+    <div id="soldOutOverlay" class="sold-out-overlay" style="display: none;">
+        <div class="sold-out-content">
+            <div class="sold-out-icon">🎉</div>
+            <h1 id="soldOutTitle">Uitverkocht voor 2025!</h1>
+            <p id="soldOutMessage" class="sold-out-message">Bedankt voor je interesse...</p>
+
+            <div class="newsletter-signup">
+                <h3>Mis het volgend jaar niet!</h3>
+                <p>Meld je aan voor onze jaarlijkse e-mail en wees als eerste op de hoogte.</p>
+
+                <form id="newsletterForm" class="newsletter-form">
+                    <div class="form-group">
+                        <input type="email" id="newsletterEmail" name="email" required
+                               placeholder="je@email.com" class="newsletter-input">
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="newsletterOptIn" name="optIn" required>
+                            <span class="checkmark"></span>
+                            <span>Ja, mail mij als de bestellingen weer opengaan</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-newsletter">Aanmelden</button>
+                </form>
+
+                <div id="newsletterSuccess" class="newsletter-success" style="display: none;">
+                    <div class="success-icon">✓</div>
+                    <p>Bedankt voor je aanmelding! We mailen je volgend jaar.</p>
+                </div>
+            </div>
+
+            <div class="sold-out-footer">
+                <p>Vragen? <a href="https://wa.me/34600999512" target="_blank" class="whatsapp-link">WhatsApp ons!</a></p>
+            </div>
+        </div>
+    </div>
+
     <header class="hero">
         <div class="container">
             <button class="info-btn" id="infoBtn" aria-label="Meer informatie">
@@ -390,6 +429,6 @@
         </div>
     </div>
 
-    <script src="js/app.js"></script>
+    <script src="js/app.js?v=3"></script>
 </body>
 </html>

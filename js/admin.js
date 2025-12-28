@@ -1,6 +1,7 @@
 /**
  * Oliebollen Costa Blanca - Admin Panel
  * Mobile-first, offline-capable
+ * v2.1 - Sold out settings
  */
 
 const API_BASE = '/api';
@@ -2251,4 +2252,257 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initConfigManagement);
 } else {
     initConfigManagement();
+}
+
+// =====================
+// Sold Out Settings
+// =====================
+let soldOutSettings = {
+    enabled: false,
+    title: '',
+    message: ''
+};
+
+async function loadSoldOutSettings() {
+    try {
+        const response = await fetch(`${API_BASE}/config`, {
+            headers: getAuthHeaders()
+        });
+
+        if (response.ok) {
+            const config = await response.json();
+
+            soldOutSettings = {
+                enabled: config.sold_out_enabled?.value === 'true',
+                title: config.sold_out_title?.value || 'Uitverkocht voor 2025!',
+                message: config.sold_out_message?.value || ''
+            };
+
+            // Update form fields
+            document.getElementById('soldOutEnabled').checked = soldOutSettings.enabled;
+            document.getElementById('soldOutStatus').textContent = soldOutSettings.enabled ? 'Aan' : 'Uit';
+            document.getElementById('soldOutTitle').value = soldOutSettings.title;
+            document.getElementById('soldOutMessage').value = soldOutSettings.message;
+
+            // Update preview
+            updateSoldOutPreview();
+        }
+    } catch (error) {
+        console.error('Failed to load sold out settings:', error);
+    }
+}
+
+async function saveSoldOutSettings() {
+    const enabled = document.getElementById('soldOutEnabled').checked;
+    const title = document.getElementById('soldOutTitle').value;
+    const message = document.getElementById('soldOutMessage').value;
+
+    try {
+        const response = await fetch(`${API_BASE}/config`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
+            body: JSON.stringify({
+                sold_out_enabled: enabled ? 'true' : 'false',
+                sold_out_title: title,
+                sold_out_message: message
+            })
+        });
+
+        if (response.ok) {
+            soldOutSettings = { enabled, title, message };
+            showNotification('Instellingen opgeslagen!', 'success');
+        } else {
+            throw new Error('Failed to save settings');
+        }
+    } catch (error) {
+        console.error('Save settings error:', error);
+        showNotification('Fout bij opslaan instellingen', 'error');
+    }
+}
+
+function updateSoldOutPreview() {
+    const title = document.getElementById('soldOutTitle').value || 'Uitverkocht voor 2025!';
+    const message = document.getElementById('soldOutMessage').value || 'Bedankt voor je interesse...';
+
+    document.getElementById('previewTitle').textContent = title;
+    document.getElementById('previewMessage').textContent = message;
+}
+
+function initSoldOutSettings() {
+    // Toggle handler
+    const toggle = document.getElementById('soldOutEnabled');
+    if (toggle) {
+        toggle.addEventListener('change', () => {
+            document.getElementById('soldOutStatus').textContent = toggle.checked ? 'Aan' : 'Uit';
+        });
+    }
+
+    // Live preview handlers
+    const titleInput = document.getElementById('soldOutTitle');
+    const messageInput = document.getElementById('soldOutMessage');
+
+    if (titleInput) {
+        titleInput.addEventListener('input', updateSoldOutPreview);
+    }
+    if (messageInput) {
+        messageInput.addEventListener('input', updateSoldOutPreview);
+    }
+
+    // Save button
+    const saveBtn = document.getElementById('saveSettingsBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveSoldOutSettings);
+    }
+
+    // Export newsletter button
+    const exportBtn = document.getElementById('exportNewsletterBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportNewsletterEmails);
+    }
+}
+
+// =====================
+// Newsletter Management
+// =====================
+let newsletterSignups = [];
+
+async function loadNewsletterSignups() {
+    try {
+        const response = await fetch(`${API_BASE}/newsletter`, {
+            headers: getAuthHeaders()
+        });
+
+        if (response.ok) {
+            newsletterSignups = await response.json();
+            renderNewsletterList();
+            document.getElementById('newsletterCount').textContent = newsletterSignups.length;
+        }
+    } catch (error) {
+        console.error('Failed to load newsletter signups:', error);
+        document.getElementById('newsletterList').innerHTML = '<p class="error">Fout bij laden aanmeldingen</p>';
+    }
+}
+
+function renderNewsletterList() {
+    const container = document.getElementById('newsletterList');
+
+    if (newsletterSignups.length === 0) {
+        container.innerHTML = '<p class="no-data">Nog geen aanmeldingen</p>';
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="newsletter-table">
+            <div class="newsletter-header">
+                <span>Email</span>
+                <span>Aangemeld op</span>
+                <span></span>
+            </div>
+            ${newsletterSignups.map(signup => `
+                <div class="newsletter-row" data-id="${signup.id}">
+                    <span class="newsletter-email">${escapeHtml(signup.email)}</span>
+                    <span class="newsletter-date">${new Date(signup.created_at).toLocaleDateString('nl-NL')}</span>
+                    <button class="btn btn-sm btn-danger newsletter-delete" data-id="${signup.id}">×</button>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+    // Add delete handlers
+    container.querySelectorAll('.newsletter-delete').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const id = e.target.dataset.id;
+            if (confirm('Weet je zeker dat je deze aanmelding wilt verwijderen?')) {
+                await deleteNewsletterSignup(id);
+            }
+        });
+    });
+}
+
+async function deleteNewsletterSignup(id) {
+    try {
+        const response = await fetch(`${API_BASE}/newsletter?id=${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+
+        if (response.ok) {
+            showNotification('Aanmelding verwijderd', 'success');
+            loadNewsletterSignups();
+        } else {
+            throw new Error('Failed to delete');
+        }
+    } catch (error) {
+        console.error('Delete error:', error);
+        showNotification('Fout bij verwijderen', 'error');
+    }
+}
+
+function exportNewsletterEmails() {
+    if (newsletterSignups.length === 0) {
+        showNotification('Geen aanmeldingen om te exporteren', 'error');
+        return;
+    }
+
+    let csv = 'Email,Aangemeld op\n';
+    newsletterSignups.forEach(signup => {
+        csv += `${signup.email},${signup.created_at}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `newsletter_aanmeldingen_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+
+    showNotification(`${newsletterSignups.length} emailadressen geëxporteerd`, 'success');
+}
+
+// Update tab switching to include settings
+const originalInitTabs = initTabs;
+initTabs = function() {
+    document.querySelectorAll('.admin-nav button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.dataset.tab;
+
+            // Update buttons
+            document.querySelectorAll('.admin-nav button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Update tabs
+            document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+
+            // Stop scanner when leaving scanner tab
+            if (tabId !== 'scanner' && scannerRunning) {
+                stopScanner();
+            }
+
+            // Load data when entering tabs
+            if (tabId === 'orders') {
+                loadOrders();
+            } else if (tabId === 'waitinglist') {
+                loadWaitinglist();
+            } else if (tabId === 'totals') {
+                updateTotals();
+            } else if (tabId === 'capacity') {
+                loadConfig();
+                loadGeneratedTimeslots();
+                renderCapacityList();
+            } else if (tabId === 'settings') {
+                loadSoldOutSettings();
+                loadNewsletterSignups();
+            }
+        });
+    });
+};
+
+// Initialize settings on load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSoldOutSettings);
+} else {
+    initSoldOutSettings();
 }

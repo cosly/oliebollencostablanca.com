@@ -1,5 +1,6 @@
 /* ===========================================
    Oliebollen Costa Blanca - Mobile First CSS
+   v2.1 - Sold out overlay styles
    =========================================== */
 
 :root {
@@ -2884,4 +2885,491 @@ footer p {
     .mobile-only {
         display: inline;
     }
+}
+
+/* ===========================================
+   Sold Out Overlay
+   =========================================== */
+.sold-out-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(44, 62, 80, 0.95);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.sold-out-content {
+    background: var(--white);
+    border-radius: var(--radius);
+    max-width: 500px;
+    width: 100%;
+    padding: 40px 30px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sold-out-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.sold-out-content h1 {
+    color: var(--primary);
+    font-size: 1.8rem;
+    margin-bottom: 16px;
+}
+
+.sold-out-message {
+    color: var(--gray-700);
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-bottom: 32px;
+}
+
+.newsletter-signup {
+    background: var(--gray-100);
+    border-radius: var(--radius-sm);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.newsletter-signup h3 {
+    color: var(--secondary);
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+}
+
+.newsletter-signup > p {
+    color: var(--gray-500);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.newsletter-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.newsletter-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.newsletter-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.checkbox-group {
+    text-align: left;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--gray-700);
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.btn-newsletter {
+    width: 100%;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.newsletter-success {
+    text-align: center;
+    padding: 20px;
+}
+
+.newsletter-success .success-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--success);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin: 0 auto 16px;
+}
+
+.newsletter-success p {
+    color: var(--gray-700);
+    font-size: 1rem;
+}
+
+.sold-out-footer {
+    color: var(--gray-500);
+    font-size: 0.9rem;
+}
+
+.sold-out-footer .whatsapp-link {
+    color: #25D366;
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+/* Blur effect for background content */
+.blurred {
+    filter: blur(8px);
+    pointer-events: none;
+}
+
+/* ===========================================
+   Admin Settings Styles
+   =========================================== */
+#tab-settings .settings-section {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+#tab-settings .settings-section h2 {
+    color: var(--secondary);
+    margin-bottom: 8px;
+    font-size: 1.4rem;
+}
+
+#tab-settings .settings-form {
+    margin-top: 20px;
+}
+
+#tab-settings .setting-row {
+    margin-bottom: 24px;
+}
+
+#tab-settings .setting-row > label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--gray-700);
+    font-size: 0.95rem;
+}
+
+#tab-settings .setting-row .form-input,
+#tab-settings .setting-row .form-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    background: var(--white);
+}
+
+#tab-settings .setting-row .form-input:focus,
+#tab-settings .setting-row .form-textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+#tab-settings .setting-row .form-textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+#tab-settings .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background: var(--gray-100);
+    border-radius: var(--radius-sm);
+    margin-bottom: 24px;
+}
+
+#tab-settings .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+}
+
+#tab-settings .toggle-text {
+    font-weight: 600;
+    color: var(--gray-700);
+    font-size: 1rem;
+}
+
+#tab-settings .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 56px;
+    height: 30px;
+    flex-shrink: 0;
+}
+
+#tab-settings .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+#tab-settings .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--gray-300);
+    border-radius: 30px;
+    transition: 0.3s;
+}
+
+#tab-settings .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+#tab-settings .toggle-switch input:checked + .toggle-slider {
+    background: var(--success);
+}
+
+#tab-settings .toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+#tab-settings .toggle-status {
+    font-weight: 600;
+    color: var(--gray-500);
+    font-size: 0.95rem;
+    min-width: 40px;
+    text-align: right;
+}
+
+#tab-settings .setting-actions {
+    margin-top: 24px;
+}
+
+#tab-settings .setting-actions .btn {
+    padding: 14px 28px;
+    font-size: 1rem;
+}
+
+/* Settings Preview */
+#tab-settings .settings-preview {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--gray-200);
+}
+
+#tab-settings .settings-preview h3 {
+    color: var(--gray-700);
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+}
+
+#tab-settings .preview-container {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-radius: var(--radius);
+    padding: 24px;
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#tab-settings .preview-overlay {
+    background: white;
+    border-radius: var(--radius);
+    padding: 32px 24px;
+    text-align: center;
+    max-width: 360px;
+    width: 100%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+#tab-settings .preview-content h2 {
+    color: var(--primary);
+    font-size: 1.3rem;
+    margin-bottom: 12px;
+}
+
+#tab-settings .preview-content > p {
+    color: var(--gray-700);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+#tab-settings .preview-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--gray-100);
+    padding: 16px;
+    border-radius: var(--radius-sm);
+}
+
+#tab-settings .preview-form input[type="email"] {
+    padding: 10px 12px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#tab-settings .preview-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--gray-600);
+    text-align: left;
+}
+
+#tab-settings .preview-checkbox input {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+#tab-settings .preview-form .btn {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    width: 100%;
+}
+
+/* Newsletter List in Admin */
+#tab-settings .newsletter-stats {
+    margin-bottom: 20px;
+}
+
+#tab-settings .stat-card.small {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 24px;
+    background: var(--gray-100);
+    border-radius: var(--radius-sm);
+}
+
+#tab-settings .stat-card.small .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+#tab-settings .stat-card.small .stat-label {
+    font-size: 0.85rem;
+    color: var(--gray-500);
+}
+
+#tab-settings .newsletter-actions {
+    margin-bottom: 20px;
+}
+
+#tab-settings .newsletter-table {
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+#tab-settings .newsletter-header {
+    display: grid;
+    grid-template-columns: 1fr 120px 40px;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--gray-100);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--gray-700);
+}
+
+#tab-settings .newsletter-row {
+    display: grid;
+    grid-template-columns: 1fr 120px 40px;
+    gap: 12px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--gray-200);
+    align-items: center;
+}
+
+#tab-settings .newsletter-row:hover {
+    background: var(--gray-100);
+}
+
+#tab-settings .newsletter-email {
+    word-break: break-all;
+    font-size: 0.95rem;
+}
+
+#tab-settings .newsletter-date {
+    color: var(--gray-500);
+    font-size: 0.85rem;
+}
+
+#tab-settings .newsletter-delete {
+    padding: 4px 10px;
+    font-size: 1.2rem;
+    line-height: 1;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#tab-settings .newsletter-delete:hover {
+    background: #c0392b;
+}
+
+#tab-settings .no-data,
+#tab-settings .loading {
+    text-align: center;
+    color: var(--gray-500);
+    padding: 40px 20px;
+}
+
+#tab-settings .newsletter-list {
+    margin-top: 20px;
 }

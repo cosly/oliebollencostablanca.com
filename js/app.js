@@ -1,6 +1,7 @@
 /**
  * Oliebollen Costa Blanca - Bestel App
  * Mobile-first, offline-capable
+ * v2.1 - Sold out mode
  */
 
 // Prijzen
@@ -38,7 +39,10 @@ let orderData = {
 const API_BASE = '/api';
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check sold out status first
+    await checkSoldOutStatus();
+
     initQuantityButtons();
     initNavigation();
     // Don't load timeslots here - they're loaded when user goes to step 2
@@ -47,7 +51,97 @@ document.addEventListener('DOMContentLoaded', () => {
     initDrawer();
     initStepperNavigation();
     initProductImageUpload();
+    initNewsletterForm();
 });
+
+// =====================
+// Sold Out Check
+// =====================
+async function checkSoldOutStatus() {
+    try {
+        const response = await fetch(`${API_BASE}/config`);
+        if (response.ok) {
+            const config = await response.json();
+            const soldOutEnabled = config.sold_out_enabled?.value === 'true';
+
+            if (soldOutEnabled) {
+                showSoldOutOverlay(
+                    config.sold_out_title?.value || 'Uitverkocht!',
+                    config.sold_out_message?.value || 'We zijn helaas uitverkocht.'
+                );
+            }
+        }
+    } catch (error) {
+        console.error('Failed to check sold out status:', error);
+    }
+}
+
+function showSoldOutOverlay(title, message) {
+    const overlay = document.getElementById('soldOutOverlay');
+    const titleEl = document.getElementById('soldOutTitle');
+    const messageEl = document.getElementById('soldOutMessage');
+
+    if (overlay) {
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        overlay.style.display = 'flex';
+
+        // Add blur to main content
+        document.querySelector('header')?.classList.add('blurred');
+        document.querySelector('main')?.classList.add('blurred');
+        document.querySelector('footer')?.classList.add('blurred');
+
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function initNewsletterForm() {
+    const form = document.getElementById('newsletterForm');
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('newsletterEmail').value.trim();
+        const optIn = document.getElementById('newsletterOptIn').checked;
+
+        if (!email || !optIn) {
+            alert('Vul je email in en ga akkoord met het ontvangen van de mail.');
+            return;
+        }
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Bezig...';
+
+        try {
+            const response = await fetch(`${API_BASE}/newsletter`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, optIn })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Show success message
+                form.style.display = 'none';
+                document.getElementById('newsletterSuccess').style.display = 'block';
+            } else {
+                alert(data.error || 'Er is iets misgegaan. Probeer het opnieuw.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        } catch (error) {
+            console.error('Newsletter signup error:', error);
+            alert('Er is iets misgegaan. Probeer het opnieuw.');
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    });
+}
 
 // =====================
 // Pre-fill from URL (for returning customers)
