@@ -99,6 +99,16 @@ function initParameterSliders() {
             recalculate();
         });
     }
+
+    // Pre-open start time
+    const preOpenTime = document.getElementById('param_pre_open_time');
+    if (preOpenTime) {
+        preOpenTime.value = currentParams.pre_open_start;
+        preOpenTime.addEventListener('change', () => {
+            currentParams.pre_open_start = preOpenTime.value;
+            recalculate();
+        });
+    }
 }
 
 function initFryUnits() {

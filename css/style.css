@@ -3485,6 +3485,23 @@ footer p {
     color: var(--primary);
 }
 
+.time-input {
+    padding: 4px 8px;
+    border: 1px solid var(--gray-300);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-family: inherit;
+}
+
+.time-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.pre-open-row label {
+    flex: none;
+}
+
 .fry-units-config {
     display: flex;
     flex-direction: column;
