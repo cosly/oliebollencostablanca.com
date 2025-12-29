@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2.1 - Sold out settings -->
+<!-- v2.2 - Planning simulation -->
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
@@ -57,6 +57,7 @@
     <nav class="admin-nav">
         <button class="active" data-tab="scanner">Scanner</button>
         <button data-tab="orders">Bestellingen</button>
+        <button data-tab="planning">Planning</button>
         <button data-tab="capacity">Capaciteit</button>
         <button data-tab="totals">Totalen</button>
         <button data-tab="settings">Instellingen</button>
@@ -174,6 +175,199 @@
             <div id="ordersList" class="orders-list">
                 <!-- Orders worden hier geladen -->
                 <p class="loading">Bestellingen laden...</p>
+            </div>
+        </section>
+
+        <!-- Planning Tab -->
+        <section id="tab-planning" class="admin-tab">
+            <div class="planning-container">
+                <!-- Header -->
+                <div class="planning-header">
+                    <div class="planning-date-select">
+                        <label for="planningDate">Datum:</label>
+                        <input type="date" id="planningDate" class="form-input">
+                    </div>
+                    <div class="planning-actions">
+                        <button id="refreshPlanningBtn" class="btn btn-secondary">Vernieuwen</button>
+                        <button id="printRunsheetBtn" class="btn btn-primary">Print Runsheet</button>
+                    </div>
+                </div>
+
+                <!-- Main Layout -->
+                <div class="planning-layout">
+                    <!-- Left: Parameters -->
+                    <div class="planning-params">
+                        <h3>Parameters</h3>
+
+                        <!-- Beslag -->
+                        <div class="param-group">
+                            <h4>Beslag</h4>
+                            <div class="param-row">
+                                <label>Rijstijd (min)</label>
+                                <input type="range" id="param_rise_time" min="30" max="90" value="45" class="param-slider">
+                                <span class="param-value" id="param_rise_time_val">45</span>
+                            </div>
+                            <div class="param-row">
+                                <label>Mix tijd (min)</label>
+                                <input type="range" id="param_mix_time" min="5" max="30" value="15" class="param-slider">
+                                <span class="param-value" id="param_mix_time_val">15</span>
+                            </div>
+                            <div class="param-row">
+                                <label>Max leeftijd (min)</label>
+                                <input type="range" id="param_max_age" min="60" max="180" value="120" class="param-slider">
+                                <span class="param-value" id="param_max_age_val">120</span>
+                            </div>
+                            <div class="param-row">
+                                <label>Batch grootte</label>
+                                <input type="range" id="param_batch_size" min="30" max="100" value="60" class="param-slider">
+                                <span class="param-value" id="param_batch_size_val">60</span>
+                            </div>
+                        </div>
+
+                        <!-- Frituren -->
+                        <div class="param-group">
+                            <h4>Frituren</h4>
+                            <div class="param-row">
+                                <label>Frituurtijd (sec)</label>
+                                <input type="range" id="param_fry_time" min="120" max="300" value="180" class="param-slider">
+                                <span class="param-value" id="param_fry_time_val">180</span>
+                            </div>
+                            <div class="param-row">
+                                <label>Laden/lossen (sec)</label>
+                                <input type="range" id="param_load_time" min="15" max="60" value="30" class="param-slider">
+                                <span class="param-value" id="param_load_time_val">30</span>
+                            </div>
+                        </div>
+
+                        <!-- Personeel -->
+                        <div class="param-group">
+                            <h4>Personeel</h4>
+                            <div class="param-row">
+                                <label>Scheppen</label>
+                                <input type="range" id="param_scoop_workers" min="1" max="4" value="2" class="param-slider">
+                                <span class="param-value" id="param_scoop_workers_val">2</span>
+                            </div>
+                            <div class="param-row">
+                                <label>Inpakken</label>
+                                <input type="range" id="param_pack_workers" min="1" max="4" value="1" class="param-slider">
+                                <span class="param-value" id="param_pack_workers_val">1</span>
+                            </div>
+                        </div>
+
+                        <!-- Frituur Units -->
+                        <div class="param-group">
+                            <h4>Frituur Units</h4>
+                            <div id="fryUnitsConfig" class="fry-units-config">
+                                <div class="fry-unit">
+                                    <input type="checkbox" id="unit_1" checked>
+                                    <label for="unit_1">Pan 1 (22)</label>
+                                </div>
+                                <div class="fry-unit">
+                                    <input type="checkbox" id="unit_2" checked>
+                                    <label for="unit_2">Pan 2 (22)</label>
+                                </div>
+                                <div class="fry-unit">
+                                    <input type="checkbox" id="unit_3" checked>
+                                    <label for="unit_3">Pan 3 (20)</label>
+                                </div>
+                                <div class="fry-unit">
+                                    <input type="checkbox" id="unit_4" checked>
+                                    <label for="unit_4">Wok (25)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Buffer -->
+                        <div class="param-group">
+                            <h4>Buffer</h4>
+                            <div class="param-row">
+                                <label>Per uur</label>
+                                <input type="range" id="param_buffer" min="0" max="50" value="10" class="param-slider">
+                                <span class="param-value" id="param_buffer_val">10</span>
+                            </div>
+                            <div class="param-row">
+                                <input type="checkbox" id="param_pre_open" checked>
+                                <label for="param_pre_open">Pre-opening slot (08:00)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Results -->
+                    <div class="planning-results">
+                        <!-- Summary -->
+                        <div class="planning-summary">
+                            <div class="summary-stat">
+                                <span class="stat-label">Orders</span>
+                                <span class="stat-value" id="summaryOrders">0</span>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="stat-label">Rozijnen</span>
+                                <span class="stat-value" id="summaryRaisin">0</span>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="stat-label">Naturel</span>
+                                <span class="stat-value" id="summaryPlain">0</span>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="stat-label">Appel</span>
+                                <span class="stat-value" id="summaryApple">0</span>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="stat-label">Batches</span>
+                                <span class="stat-value" id="summaryBatches">0</span>
+                            </div>
+                        </div>
+
+                        <!-- Warnings -->
+                        <div id="planningWarnings" class="planning-warnings" style="display: none;">
+                            <!-- Warnings loaded here -->
+                        </div>
+
+                        <!-- Planning Table -->
+                        <div class="planning-table-container">
+                            <h3>Planning per Tijdslot</h3>
+                            <table class="planning-table" id="planningTable">
+                                <thead>
+                                    <tr>
+                                        <th>Slot</th>
+                                        <th>Vraag</th>
+                                        <th>Productie</th>
+                                        <th>Voorraad</th>
+                                        <th>Bottleneck</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="planningTableBody">
+                                    <tr><td colspan="5" class="loading">Planning berekenen...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Batter Timeline -->
+                        <div class="batter-timeline-container">
+                            <h3>Beslag Planning</h3>
+                            <div class="batter-timeline" id="batterTimeline">
+                                <p class="loading">Timeline laden...</p>
+                            </div>
+                        </div>
+
+                        <!-- Charts -->
+                        <div class="planning-charts">
+                            <div class="chart-container">
+                                <h4>Vraag vs Productie</h4>
+                                <canvas id="demandProductionChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h4>Voorraad Verloop</h4>
+                                <canvas id="stockChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Print Runsheet (hidden, for printing) -->
+            <div id="runsheetPrint" class="runsheet-print">
+                <!-- Generated runsheet will be placed here -->
             </div>
         </section>
 
@@ -461,6 +655,8 @@
 
     </div><!-- End adminContent wrapper -->
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="js/admin.js"></script>
+    <script type="module" src="js/planning.js"></script>
 </body>
 </html>

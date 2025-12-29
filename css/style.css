@@ -3373,3 +3373,492 @@ footer p {
 #tab-settings .newsletter-list {
     margin-top: 20px;
 }
+
+/* ===========================================
+   Planning Tab Styles
+   =========================================== */
+.planning-container {
+    padding: 16px;
+}
+
+.planning-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.planning-date-select {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.planning-date-select label {
+    font-weight: 600;
+}
+
+.planning-date-select input[type="date"] {
+    padding: 8px 12px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius);
+    font-size: 1rem;
+}
+
+.planning-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.planning-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 900px) {
+    .planning-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Parameters Panel */
+.planning-params {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+.planning-params h3 {
+    margin: 0 0 16px;
+    font-size: 1.1rem;
+    color: var(--gray-800);
+}
+
+.param-group {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.param-group:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.param-group h4 {
+    margin: 0 0 12px;
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    font-weight: 600;
+}
+
+.param-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.param-row label {
+    flex: 1;
+    font-size: 0.85rem;
+    color: var(--gray-700);
+}
+
+.param-slider {
+    width: 80px;
+    cursor: pointer;
+}
+
+.param-value {
+    min-width: 30px;
+    text-align: right;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--primary);
+}
+
+.fry-units-config {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.fry-unit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fry-unit input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
+.fry-unit label {
+    font-size: 0.9rem;
+}
+
+/* Results Panel */
+.planning-results {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Summary Stats */
+.planning-summary {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.summary-stat {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    min-width: 80px;
+}
+
+.summary-stat .stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    margin-bottom: 4px;
+}
+
+.summary-stat .stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+/* Warnings */
+.planning-warnings {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: var(--radius);
+    padding: 12px;
+}
+
+.warning-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.warning-item:last-child {
+    border-bottom: none;
+}
+
+.warning-item.critical {
+    color: #c0392b;
+}
+
+.warning-item.warning {
+    color: #856404;
+}
+
+.warning-item.info {
+    color: #0c5460;
+}
+
+.warning-icon {
+    font-size: 1rem;
+}
+
+.warning-time {
+    font-weight: 600;
+    min-width: 50px;
+}
+
+.warning-message {
+    flex: 1;
+}
+
+/* Planning Table */
+.planning-table-container {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+}
+
+.planning-table-container h3 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+}
+
+.planning-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.planning-table th,
+.planning-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.planning-table th {
+    background: var(--gray-100);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--gray-600);
+}
+
+.planning-table td {
+    font-size: 0.9rem;
+}
+
+.planning-table .slot-cell {
+    font-weight: 600;
+}
+
+.planning-table .demand-cell,
+.planning-table .production-cell,
+.planning-table .stock-cell {
+    text-align: center;
+}
+
+.planning-table .stock-cell.negative {
+    color: var(--danger);
+    font-weight: 700;
+}
+
+.planning-table .bottleneck-cell.has-bottleneck {
+    color: #e67e22;
+    font-weight: 600;
+}
+
+.planning-table .shortage-row {
+    background: rgba(231, 76, 60, 0.1);
+}
+
+.planning-table .bottleneck-row {
+    background: rgba(230, 126, 34, 0.1);
+}
+
+/* Batter Timeline */
+.batter-timeline-container {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+}
+
+.batter-timeline-container h3 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+}
+
+.timeline-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    padding-left: 80px;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+.timeline-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.timeline-label {
+    width: 70px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-600);
+}
+
+.timeline-track {
+    flex: 1;
+    height: 28px;
+    background: var(--gray-100);
+    border-radius: 4px;
+    position: relative;
+}
+
+.batch-bar {
+    position: absolute;
+    height: 24px;
+    top: 2px;
+    border-radius: 3px;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    cursor: pointer;
+}
+
+/* Charts */
+.planning-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 700px) {
+    .planning-charts {
+        grid-template-columns: 1fr;
+    }
+}
+
+.chart-container {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+}
+
+.chart-container h4 {
+    margin: 0 0 12px;
+    font-size: 0.9rem;
+    color: var(--gray-600);
+}
+
+.chart-container canvas {
+    max-height: 200px;
+}
+
+/* Print Runsheet */
+.runsheet-print {
+    display: none;
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    .runsheet-print,
+    .runsheet-print * {
+        visibility: visible;
+    }
+
+    .runsheet-print {
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+
+    .runsheet {
+        padding: 20px;
+        font-family: Arial, sans-serif;
+    }
+
+    .runsheet-header {
+        text-align: center;
+        border-bottom: 2px solid #333;
+        padding-bottom: 16px;
+        margin-bottom: 20px;
+    }
+
+    .runsheet-header h1 {
+        font-size: 1.5rem;
+        margin: 0 0 8px;
+    }
+
+    .runsheet-header p {
+        font-size: 0.9rem;
+        color: #666;
+        margin: 0;
+    }
+
+    .runsheet-summary {
+        border: 1px solid #ddd;
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+
+    .runsheet-summary h2 {
+        font-size: 1rem;
+        margin: 0 0 8px;
+    }
+
+    .runsheet-summary p {
+        margin: 4px 0;
+    }
+
+    .runsheet-tasks h2 {
+        font-size: 1rem;
+        margin-bottom: 12px;
+    }
+
+    .task-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .task-checkbox {
+        font-size: 1.2rem;
+    }
+
+    .task-time {
+        font-weight: 700;
+        min-width: 50px;
+    }
+
+    .task-description {
+        flex: 1;
+    }
+
+    .task-warning {
+        color: #e67e22;
+        font-size: 0.85rem;
+    }
+
+    .task-item.production_start {
+        background: #f0f0f0;
+        margin: 0 -16px;
+        padding: 8px 16px;
+    }
+
+    .runsheet-warnings {
+        margin-top: 20px;
+        padding: 16px;
+        border: 2px solid #e74c3c;
+    }
+
+    .runsheet-warnings h2 {
+        color: #e74c3c;
+        font-size: 1rem;
+        margin: 0 0 8px;
+    }
+
+    .runsheet-warnings .critical {
+        color: #c0392b;
+    }
+
+    .runsheet-warnings .warning {
+        color: #e67e22;
+    }
+}
