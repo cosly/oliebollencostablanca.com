@@ -34,7 +34,7 @@ export async function onRequestGet(context) {
 
     try {
         // Get all orders with their timeslot info
-        // Orders have: timeslot_id, timeslot_label, products (JSON)
+        // All orders are for December 31st (single production day)
         const ordersQuery = await env.DB.prepare(`
             SELECT
                 o.id,
@@ -46,8 +46,7 @@ export async function onRequestGet(context) {
             FROM orders o
             LEFT JOIN timeslots t ON o.timeslot_id = t.id
             WHERE o.status != 'cancelled'
-            AND DATE(o.created_at) >= DATE(?, '-7 days')
-        `).bind(date).all();
+        `).all();
 
         // Aggregate by hour and product
         const slotData = {};
@@ -72,26 +71,26 @@ export async function onRequestGet(context) {
             }
 
             // Parse products JSON
+            // Format: {"oliebol_krenten":1,"oliebol_naturel":0,"appelbeignet":1}
             try {
                 const products = JSON.parse(order.products);
-                for (const product of products) {
-                    const qty = product.quantity || product.qty || 1;
-                    const name = (product.name || product.product || '').toLowerCase();
 
-                    if (name.includes('rozijn') || name.includes('krenten')) {
-                        slotData[slotId].raisin += qty;
-                        totals.raisin += qty;
-                    } else if (name.includes('naturel') || name.includes('zonder')) {
-                        slotData[slotId].plain += qty;
-                        totals.plain += qty;
-                    } else if (name.includes('appel') || name.includes('beignet')) {
-                        slotData[slotId].apple += qty;
-                        totals.apple += qty;
-                    } else {
-                        // Default to plain for unknown
-                        slotData[slotId].plain += qty;
-                        totals.plain += qty;
-                    }
+                // Rozijnen/krenten oliebollen
+                if (products.oliebol_krenten > 0) {
+                    slotData[slotId].raisin += products.oliebol_krenten;
+                    totals.raisin += products.oliebol_krenten;
+                }
+
+                // Naturel oliebollen
+                if (products.oliebol_naturel > 0) {
+                    slotData[slotId].plain += products.oliebol_naturel;
+                    totals.plain += products.oliebol_naturel;
+                }
+
+                // Appelbeignets
+                if (products.appelbeignet > 0) {
+                    slotData[slotId].apple += products.appelbeignet;
+                    totals.apple += products.appelbeignet;
                 }
             } catch (e) {
                 console.error('Failed to parse products JSON:', e);

@@ -3413,14 +3413,15 @@ footer p {
 }
 
 .planning-layout {
-    display: grid;
-    grid-template-columns: 280px 1fr;
+    display: grid !important;
+    grid-template-columns: 280px 1fr !important;
     gap: 20px;
+    background: #f0f0f0; /* debug */
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
     .planning-layout {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
     }
 }
 
@@ -3521,6 +3522,123 @@ footer p {
 
 .fry-unit label {
     font-size: 0.9rem;
+}
+
+/* Help Section */
+.planning-help {
+    margin-top: 16px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    background: var(--gray-50);
+}
+
+.planning-help summary {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--gray-700);
+    list-style: none;
+}
+
+.planning-help summary::-webkit-details-marker {
+    display: none;
+}
+
+.planning-help summary::before {
+    content: "?";
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.planning-help[open] summary {
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.help-content {
+    padding: 16px;
+    font-size: 0.85rem;
+    color: var(--gray-700);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.help-content h4 {
+    margin: 16px 0 8px;
+    font-size: 0.9rem;
+    color: var(--gray-800);
+}
+
+.help-content h4:first-child {
+    margin-top: 0;
+}
+
+.help-content p {
+    margin: 0 0 12px;
+    line-height: 1.5;
+}
+
+.help-content dl {
+    margin: 0 0 12px;
+}
+
+.help-content dt {
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-top: 8px;
+}
+
+.help-content dd {
+    margin: 2px 0 0 16px;
+    color: var(--gray-600);
+}
+
+.help-content ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.help-content li {
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+
+.warning-legend {
+    list-style: none;
+    padding-left: 0;
+}
+
+.warning-legend li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.legend-dot.critical {
+    background: #e74c3c;
+}
+
+.legend-dot.warning {
+    background: #f39c12;
+}
+
+.legend-dot.info {
+    background: #3498db;
 }
 
 /* Results Panel */

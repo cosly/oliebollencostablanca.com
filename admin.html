@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- v2.2 - Planning simulation -->
+<!-- v2.4 - Planning help section -->
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Admin - Oliebollen Costa Blanca</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=2.5">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2c3e50">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -291,6 +291,58 @@
                                 <input type="time" id="param_pre_open_time" value="08:00" class="time-input">
                             </div>
                         </div>
+
+                        <!-- Help Section -->
+                        <details class="planning-help">
+                            <summary>Hulp &amp; Uitleg</summary>
+                            <div class="help-content">
+                                <h4>Hoe werkt het?</h4>
+                                <p>De planning berekent automatisch wanneer je beslag moet mixen en hoeveel je per uur moet produceren op basis van de bestellingen.</p>
+
+                                <h4>Parameters</h4>
+                                <dl>
+                                    <dt>Rijstijd</dt>
+                                    <dd>Hoe lang beslag moet rijzen voordat je kunt bakken</dd>
+                                    <dt>Mix tijd</dt>
+                                    <dd>Tijd om één batch beslag te maken</dd>
+                                    <dt>Batch grootte</dt>
+                                    <dd>Aantal oliebollen uit één batch beslag</dd>
+                                    <dt>Frituurtijd</dt>
+                                    <dd>Baktijd per lading in de pan</dd>
+                                    <dt>Buffer per uur</dt>
+                                    <dd>Extra productie bovenop bestellingen</dd>
+                                    <dt>Pre-opening slot</dt>
+                                    <dd>Start productie vóór opening om voorraad op te bouwen</dd>
+                                </dl>
+
+                                <h4>De tabel lezen</h4>
+                                <dl>
+                                    <dt>Vraag</dt>
+                                    <dd>Aantal bestelde oliebollen voor dit uur</dd>
+                                    <dt>Productie</dt>
+                                    <dd>Hoeveel je kunt maken dit uur</dd>
+                                    <dt>Voorraad</dt>
+                                    <dd>Beschikbare voorraad (negatief = tekort!)</dd>
+                                    <dt>Knelpunt</dt>
+                                    <dd>Wat de productie limiteert (scheppen/frituren/inpakken/beslag)</dd>
+                                </dl>
+
+                                <h4>Waarschuwingen</h4>
+                                <ul class="warning-legend">
+                                    <li><span class="legend-dot critical"></span> <strong>Rood:</strong> Tekort onvermijdelijk - actie nodig!</li>
+                                    <li><span class="legend-dot warning"></span> <strong>Oranje:</strong> Let op - mogelijk probleem</li>
+                                    <li><span class="legend-dot info"></span> <strong>Blauw:</strong> Ter informatie</li>
+                                </ul>
+
+                                <h4>Tips</h4>
+                                <ul>
+                                    <li>Plan de avond ervoor zodat je nog personeel kunt regelen</li>
+                                    <li>Gebruik pre-opening om buffer op te bouwen</li>
+                                    <li>Voorraadlijn in de grafiek moet boven 0 blijven</li>
+                                    <li>Print de runsheet en vink taken af tijdens productie</li>
+                                </ul>
+                            </div>
+                        </details>
                     </div>
 
                     <!-- Right: Results -->
@@ -657,7 +709,7 @@
     </div><!-- End adminContent wrapper -->
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="js/admin.js"></script>
-    <script type="module" src="js/planning.js"></script>
+    <script src="js/admin.js?v=2.3"></script>
+    <script type="module" src="js/planning.js?v=2.3"></script>
 </body>
 </html>
