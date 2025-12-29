@@ -3,7 +3,7 @@
  * Offline-first PWA support
  */
 
-const CACHE_NAME = 'oliebollen-v6';
+const CACHE_NAME = 'oliebollen-v7';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -52,7 +52,13 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Static assets - cache first, network fallback
+    // HTML pages - network first (for sold out check)
+    if (url.pathname === '/' || url.pathname.endsWith('.html')) {
+        event.respondWith(networkFirstStrategy(request));
+        return;
+    }
+
+    // Static assets (CSS, JS, images) - cache first, network fallback
     event.respondWith(cacheFirstStrategy(request));
 });
 
