@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- v2.4 - Planning help section -->
+<!-- v2.5 - Simplified planning layout -->
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Admin - Oliebollen Costa Blanca</title>
-    <link rel="stylesheet" href="css/style.css?v=2.5">
+    <link rel="stylesheet" href="css/style.css?v=3.1">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2c3e50">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,6 +58,7 @@
         <button class="active" data-tab="scanner">Scanner</button>
         <button data-tab="orders">Bestellingen</button>
         <button data-tab="planning">Planning</button>
+        <button data-tab="labels">Labels</button>
         <button data-tab="capacity">Capaciteit</button>
         <button data-tab="totals">Totalen</button>
         <button data-tab="settings">Instellingen</button>
@@ -183,14 +184,44 @@
             <div class="planning-container">
                 <!-- Header -->
                 <div class="planning-header">
-                    <div class="planning-date-select">
-                        <label for="planningDate">Datum:</label>
-                        <input type="date" id="planningDate" class="form-input">
-                    </div>
+                    <h2>Productieplanning 31 December</h2>
                     <div class="planning-actions">
                         <button id="refreshPlanningBtn" class="btn btn-secondary">Vernieuwen</button>
                         <button id="printRunsheetBtn" class="btn btn-primary">Print Runsheet</button>
                     </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="planning-summary">
+                    <div class="summary-stat">
+                        <span class="stat-label">Totaal</span>
+                        <span class="stat-value" id="summaryTotaal">0</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="stat-label">Oliebollen</span>
+                        <span class="stat-value" id="summaryOliebollen">0</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="stat-label">Rozijnen</span>
+                        <span class="stat-value" id="summaryRaisin">0</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="stat-label">Naturel</span>
+                        <span class="stat-value" id="summaryPlain">0</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="stat-label">Appel</span>
+                        <span class="stat-value" id="summaryApple">0</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="stat-label">Batches</span>
+                        <span class="stat-value" id="summaryBatches">0</span>
+                    </div>
+                </div>
+
+                <!-- Capacity Info -->
+                <div class="capacity-info" id="capacityInfo">
+                    Capaciteit wordt berekend...
                 </div>
 
                 <!-- Main Layout -->
@@ -199,11 +230,20 @@
                     <div class="planning-params">
                         <h3>Parameters</h3>
 
+                        <!-- Productie -->
+                        <div class="param-group">
+                            <h4>Productie</h4>
+                            <div class="param-row">
+                                <label>Start productie</label>
+                                <input type="time" id="param_start_time" value="07:00" class="param-time">
+                            </div>
+                        </div>
+
                         <!-- Beslag -->
                         <div class="param-group">
                             <h4>Beslag</h4>
                             <div class="param-row">
-                                <label>Rijstijd (min)</label>
+                                <label>Rijstijd oliebollen (min)</label>
                                 <input type="range" id="param_rise_time" min="30" max="90" value="45" class="param-slider">
                                 <span class="param-value" id="param_rise_time_val">45</span>
                             </div>
@@ -212,15 +252,25 @@
                                 <input type="range" id="param_mix_time" min="5" max="30" value="15" class="param-slider">
                                 <span class="param-value" id="param_mix_time_val">15</span>
                             </div>
+                        </div>
+
+                        <!-- Batch grootte per type -->
+                        <div class="param-group">
+                            <h4>Batch grootte (stuks)</h4>
                             <div class="param-row">
-                                <label>Max leeftijd (min)</label>
-                                <input type="range" id="param_max_age" min="60" max="180" value="120" class="param-slider">
-                                <span class="param-value" id="param_max_age_val">120</span>
+                                <label>🟠 Naturel</label>
+                                <input type="range" id="param_batch_naturel" min="10" max="30" value="20" class="param-slider">
+                                <span class="param-value" id="param_batch_naturel_val">20</span>
                             </div>
                             <div class="param-row">
-                                <label>Batch grootte</label>
-                                <input type="range" id="param_batch_size" min="30" max="100" value="60" class="param-slider">
-                                <span class="param-value" id="param_batch_size_val">60</span>
+                                <label>🟣 Rozijnen</label>
+                                <input type="range" id="param_batch_rozijnen" min="10" max="30" value="20" class="param-slider">
+                                <span class="param-value" id="param_batch_rozijnen_val">20</span>
+                            </div>
+                            <div class="param-row">
+                                <label>🟢 Appel</label>
+                                <input type="range" id="param_batch_appel" min="10" max="30" value="20" class="param-slider">
+                                <span class="param-value" id="param_batch_appel_val">20</span>
                             </div>
                         </div>
 
@@ -228,199 +278,106 @@
                         <div class="param-group">
                             <h4>Frituren</h4>
                             <div class="param-row">
-                                <label>Frituurtijd (sec)</label>
-                                <input type="range" id="param_fry_time" min="120" max="300" value="180" class="param-slider">
-                                <span class="param-value" id="param_fry_time_val">180</span>
+                                <label>Baktijd (min)</label>
+                                <input type="range" id="param_fry_time" min="2" max="6" value="3" class="param-slider">
+                                <span class="param-value" id="param_fry_time_val">3</span>
                             </div>
                             <div class="param-row">
-                                <label>Laden/lossen (sec)</label>
-                                <input type="range" id="param_load_time" min="15" max="60" value="30" class="param-slider">
-                                <span class="param-value" id="param_load_time_val">30</span>
-                            </div>
-                        </div>
-
-                        <!-- Personeel -->
-                        <div class="param-group">
-                            <h4>Personeel</h4>
-                            <div class="param-row">
-                                <label>Scheppen</label>
-                                <input type="range" id="param_scoop_workers" min="1" max="4" value="2" class="param-slider">
-                                <span class="param-value" id="param_scoop_workers_val">2</span>
-                            </div>
-                            <div class="param-row">
-                                <label>Inpakken</label>
-                                <input type="range" id="param_pack_workers" min="1" max="4" value="1" class="param-slider">
-                                <span class="param-value" id="param_pack_workers_val">1</span>
+                                <label>Laden/lossen (min)</label>
+                                <input type="range" id="param_load_time" min="0.5" max="2" step="0.5" value="0.5" class="param-slider">
+                                <span class="param-value" id="param_load_time_val">0.5</span>
                             </div>
                         </div>
 
                         <!-- Frituur Units -->
                         <div class="param-group">
-                            <h4>Frituur Units</h4>
-                            <div id="fryUnitsConfig" class="fry-units-config">
+                            <h4>Pannen</h4>
+                            <div class="fry-units-config">
                                 <div class="fry-unit">
-                                    <input type="checkbox" id="unit_1" checked>
-                                    <label for="unit_1">Pan 1 (22)</label>
+                                    <input type="checkbox" id="unit_pan1" checked>
+                                    <label for="unit_pan1">Pan 1 (22)</label>
                                 </div>
                                 <div class="fry-unit">
-                                    <input type="checkbox" id="unit_2" checked>
-                                    <label for="unit_2">Pan 2 (22)</label>
+                                    <input type="checkbox" id="unit_pan2" checked>
+                                    <label for="unit_pan2">Pan 2 (22)</label>
                                 </div>
                                 <div class="fry-unit">
-                                    <input type="checkbox" id="unit_3" checked>
-                                    <label for="unit_3">Pan 3 (20)</label>
+                                    <input type="checkbox" id="unit_pan3" checked>
+                                    <label for="unit_pan3">Pan 3 (20)</label>
                                 </div>
                                 <div class="fry-unit">
-                                    <input type="checkbox" id="unit_4" checked>
-                                    <label for="unit_4">Wok (25)</label>
+                                    <input type="checkbox" id="unit_wok" checked>
+                                    <label for="unit_wok">Wok (25)</label>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Buffer -->
-                        <div class="param-group">
-                            <h4>Buffer</h4>
-                            <div class="param-row">
-                                <label>Per uur</label>
-                                <input type="range" id="param_buffer" min="0" max="50" value="10" class="param-slider">
-                                <span class="param-value" id="param_buffer_val">10</span>
-                            </div>
-                            <div class="param-row pre-open-row">
-                                <input type="checkbox" id="param_pre_open" checked>
-                                <label for="param_pre_open">Pre-opening slot vanaf</label>
-                                <input type="time" id="param_pre_open_time" value="08:00" class="time-input">
-                            </div>
-                        </div>
-
-                        <!-- Help Section -->
+                        <!-- Help -->
                         <details class="planning-help">
-                            <summary>Hulp &amp; Uitleg</summary>
+                            <summary>Hulp</summary>
                             <div class="help-content">
-                                <h4>Hoe werkt het?</h4>
-                                <p>De planning berekent automatisch wanneer je beslag moet mixen en hoeveel je per uur moet produceren op basis van de bestellingen.</p>
-
-                                <h4>Parameters</h4>
-                                <dl>
-                                    <dt>Rijstijd</dt>
-                                    <dd>Hoe lang beslag moet rijzen voordat je kunt bakken</dd>
-                                    <dt>Mix tijd</dt>
-                                    <dd>Tijd om één batch beslag te maken</dd>
-                                    <dt>Batch grootte</dt>
-                                    <dd>Aantal oliebollen uit één batch beslag</dd>
-                                    <dt>Frituurtijd</dt>
-                                    <dd>Baktijd per lading in de pan</dd>
-                                    <dt>Buffer per uur</dt>
-                                    <dd>Extra productie bovenop bestellingen</dd>
-                                    <dt>Pre-opening slot</dt>
-                                    <dd>Start productie vóór opening om voorraad op te bouwen</dd>
-                                </dl>
-
-                                <h4>De tabel lezen</h4>
-                                <dl>
-                                    <dt>Vraag</dt>
-                                    <dd>Aantal bestelde oliebollen voor dit uur</dd>
-                                    <dt>Productie</dt>
-                                    <dd>Hoeveel je kunt maken dit uur</dd>
-                                    <dt>Voorraad</dt>
-                                    <dd>Beschikbare voorraad (negatief = tekort!)</dd>
-                                    <dt>Knelpunt</dt>
-                                    <dd>Wat de productie limiteert (scheppen/frituren/inpakken/beslag)</dd>
-                                </dl>
-
-                                <h4>Waarschuwingen</h4>
-                                <ul class="warning-legend">
-                                    <li><span class="legend-dot critical"></span> <strong>Rood:</strong> Tekort onvermijdelijk - actie nodig!</li>
-                                    <li><span class="legend-dot warning"></span> <strong>Oranje:</strong> Let op - mogelijk probleem</li>
-                                    <li><span class="legend-dot info"></span> <strong>Blauw:</strong> Ter informatie</li>
-                                </ul>
-
-                                <h4>Tips</h4>
-                                <ul>
-                                    <li>Plan de avond ervoor zodat je nog personeel kunt regelen</li>
-                                    <li>Gebruik pre-opening om buffer op te bouwen</li>
-                                    <li>Voorraadlijn in de grafiek moet boven 0 blijven</li>
-                                    <li>Print de runsheet en vink taken af tijdens productie</li>
-                                </ul>
+                                <p><strong>Oliebollenbeslag</strong> moet rijzen (45 min). <strong>Appelbeslag</strong> kan direct gebruikt worden.</p>
+                                <p>Per tijdslot zie je hoeveel stuks klaar moeten zijn en wanneer je moet beginnen met mixen.</p>
                             </div>
                         </details>
                     </div>
 
                     <!-- Right: Results -->
                     <div class="planning-results">
-                        <!-- Summary -->
-                        <div class="planning-summary">
-                            <div class="summary-stat">
-                                <span class="stat-label">Orders</span>
-                                <span class="stat-value" id="summaryOrders">0</span>
-                            </div>
-                            <div class="summary-stat">
-                                <span class="stat-label">Rozijnen</span>
-                                <span class="stat-value" id="summaryRaisin">0</span>
-                            </div>
-                            <div class="summary-stat">
-                                <span class="stat-label">Naturel</span>
-                                <span class="stat-value" id="summaryPlain">0</span>
-                            </div>
-                            <div class="summary-stat">
-                                <span class="stat-label">Appel</span>
-                                <span class="stat-value" id="summaryApple">0</span>
-                            </div>
-                            <div class="summary-stat">
-                                <span class="stat-label">Batches</span>
-                                <span class="stat-value" id="summaryBatches">0</span>
-                            </div>
-                        </div>
-
-                        <!-- Warnings -->
-                        <div id="planningWarnings" class="planning-warnings" style="display: none;">
-                            <!-- Warnings loaded here -->
-                        </div>
-
-                        <!-- Planning Table -->
-                        <div class="planning-table-container">
+                        <!-- Planning per slot -->
+                        <div class="planning-slots">
                             <h3>Planning per Tijdslot</h3>
-                            <table class="planning-table" id="planningTable">
-                                <thead>
-                                    <tr>
-                                        <th>Slot</th>
-                                        <th>Vraag</th>
-                                        <th>Productie</th>
-                                        <th>Voorraad</th>
-                                        <th>Bottleneck</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="planningTableBody">
-                                    <tr><td colspan="5" class="loading">Planning berekenen...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Batter Timeline -->
-                        <div class="batter-timeline-container">
-                            <h3>Beslag Planning</h3>
-                            <div class="batter-timeline" id="batterTimeline">
-                                <p class="loading">Timeline laden...</p>
+                            <div id="planningTableBody" class="slots-container">
+                                <p class="loading">Planning berekenen...</p>
                             </div>
                         </div>
 
-                        <!-- Charts -->
-                        <div class="planning-charts">
-                            <div class="chart-container">
-                                <h4>Vraag vs Productie</h4>
-                                <canvas id="demandProductionChart"></canvas>
-                            </div>
-                            <div class="chart-container">
-                                <h4>Voorraad Verloop</h4>
-                                <canvas id="stockChart"></canvas>
+                        <!-- Takenlijst -->
+                        <div class="task-list-container">
+                            <h3>Takenlijst (chronologisch)</h3>
+                            <div id="taskList" class="task-list">
+                                <p class="loading">Taken laden...</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Print Runsheet (hidden, for printing) -->
-            <div id="runsheetPrint" class="runsheet-print">
-                <!-- Generated runsheet will be placed here -->
+        <!-- Labels Tab -->
+        <section id="tab-labels" class="admin-tab">
+            <div class="labels-container">
+                <div class="labels-header">
+                    <h2>Zaklabels Printen</h2>
+                    <p>Genereer labels voor oliebollenzakken (2x A5 per A4)</p>
+                </div>
+
+                <!-- Settings -->
+                <div class="labels-settings">
+                    <div class="setting-row">
+                        <label for="labelText">Tekst op label:</label>
+                        <input type="text" id="labelText" class="form-input" value="Fijne jaarwisseling!" placeholder="Tekst voor op het label">
+                    </div>
+                    <div class="setting-row">
+                        <label for="timeslotFilterLabels">Filter op tijdslot:</label>
+                        <select id="timeslotFilterLabels" class="filter-select">
+                            <option value="">Alle tijdsloten</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="labels-actions">
+                    <button id="selectAllLabels" class="btn btn-secondary">Alles selecteren</button>
+                    <button id="deselectAllLabels" class="btn btn-secondary">Niets selecteren</button>
+                    <button id="generatePdfBtn" class="btn btn-primary">PDF Genereren</button>
+                    <span class="selected-count">0 geselecteerd</span>
+                </div>
+
+                <!-- Orders List -->
+                <div class="labels-list" id="labelOrdersList">
+                    <p class="loading">Bestellingen laden...</p>
+                </div>
             </div>
         </section>
 
@@ -706,10 +663,61 @@
         </div>
     </div>
 
+    <!-- Edit Order Modal -->
+    <div id="editOrderModal" class="modal" style="display: none;">
+        <div class="modal-content edit-order-modal">
+            <h3>Order bewerken</h3>
+            <p class="modal-order-number" id="editOrderNumber">-</p>
+            <p class="modal-customer" id="editCustomerName">-</p>
+
+            <div class="edit-form">
+                <div class="edit-section">
+                    <label>Tijdslot</label>
+                    <select id="editTimeslot" class="edit-input"></select>
+                </div>
+
+                <div class="edit-section">
+                    <label>Producten</label>
+                    <div class="edit-products">
+                        <div class="edit-product-row">
+                            <span class="product-label">Oliebollen rozijnen</span>
+                            <input type="number" id="editKrenten" min="0" max="100" value="0" class="edit-input">
+                        </div>
+                        <div class="edit-product-row">
+                            <span class="product-label">Oliebollen naturel</span>
+                            <input type="number" id="editNaturel" min="0" max="100" value="0" class="edit-input">
+                        </div>
+                        <div class="edit-product-row">
+                            <span class="product-label">Appelbeignets</span>
+                            <input type="number" id="editAppel" min="0" max="100" value="0" class="edit-input">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="edit-total">
+                    <span>Nieuw totaal:</span>
+                    <span id="editTotal">€ 0,00</span>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="saveOrderBtn">Opslaan</button>
+                <button class="btn btn-secondary" id="cancelEditBtn">Annuleren</button>
+            </div>
+
+            <div class="delete-section">
+                <button class="btn btn-danger btn-delete-order" id="deleteOrderBtn">Order verwijderen</button>
+            </div>
+        </div>
+    </div>
+
     </div><!-- End adminContent wrapper -->
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="js/admin.js?v=2.3"></script>
-    <script type="module" src="js/planning.js?v=2.3"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="js/admin.js?v=2.8"></script>
+    <script type="module" src="js/planning.js?v=3.0"></script>
+    <script type="module" src="js/labels.js?v=2.3"></script>
 </body>
 </html>

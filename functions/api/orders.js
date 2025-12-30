@@ -41,7 +41,7 @@ export async function onRequestGet(context) {
 
     try {
         const { results } = await env.DB.prepare(
-            `SELECT * FROM orders ORDER BY created_at DESC`
+            `SELECT * FROM orders WHERE deleted_at IS NULL ORDER BY created_at DESC`
         ).all();
 
         // Parse JSON fields

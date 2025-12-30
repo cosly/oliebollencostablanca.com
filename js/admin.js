@@ -723,7 +723,9 @@ function renderOrders() {
         <div class="order-card" data-order="${escapeHtml(order.orderNumber)}">
             <div class="order-card-header">
                 <span class="order-number">${escapeHtml(order.orderNumber)}</span>
+                <button class="btn-copy-url" data-order="${escapeHtml(order.orderNumber)}" title="Kopieer link">📋</button>
                 <span class="order-status ${order.status || 'pending'}">${getStatusLabel(order.status)}</span>
+                <button class="btn-edit-order" data-order="${escapeHtml(order.orderNumber)}" title="Bewerken">✏️</button>
             </div>
             <div class="order-card-body">
                 <div class="order-customer">${escapeHtml(order.customer.naam)}</div>
@@ -749,6 +751,27 @@ function renderOrders() {
 
     container.querySelectorAll('.btn-noshow').forEach(btn => {
         btn.addEventListener('click', () => showNoshowModal(btn.dataset.order));
+    });
+
+    const editBtns = container.querySelectorAll('.btn-edit-order');
+    editBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            showEditModal(btn.dataset.order);
+        });
+    });
+
+    container.querySelectorAll('.btn-copy-url').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const orderNumber = btn.dataset.order;
+            const url = `https://oliebollencostablanca.com/order.html?order=${orderNumber}`;
+            navigator.clipboard.writeText(url).then(() => {
+                btn.textContent = '✓';
+                setTimeout(() => btn.textContent = '📋', 1500);
+            });
+        });
     });
 }
 
@@ -1019,6 +1042,145 @@ async function confirmNoshow() {
 }
 
 // =====================
+// Edit Order Modal
+// =====================
+let editingOrderNumber = null;
+
+function showEditModal(orderNumber) {
+    console.log('showEditModal called with:', orderNumber);
+    const order = orders.find(o => o.orderNumber === orderNumber);
+    console.log('Found order:', order);
+    if (!order) return;
+
+    editingOrderNumber = orderNumber;
+
+    // Populate modal
+    document.getElementById('editOrderNumber').textContent = orderNumber;
+    document.getElementById('editCustomerName').textContent = order.customer.naam;
+
+    // Populate timeslot dropdown
+    const timeslotSelect = document.getElementById('editTimeslot');
+    timeslotSelect.innerHTML = timeslots.map(ts => `
+        <option value="${ts.id}" ${ts.id === order.timeslot ? 'selected' : ''}>
+            ${ts.start || ts.start_time} - ${ts.end || ts.end_time}
+        </option>
+    `).join('');
+
+    // Populate products
+    document.getElementById('editKrenten').value = order.products.oliebol_krenten || 0;
+    document.getElementById('editNaturel').value = order.products.oliebol_naturel || 0;
+    document.getElementById('editAppel').value = order.products.appelbeignet || 0;
+
+    updateEditTotal();
+
+    // Show modal
+    document.getElementById('editOrderModal').style.display = 'flex';
+
+    // Event listeners
+    document.getElementById('editKrenten').oninput = updateEditTotal;
+    document.getElementById('editNaturel').oninput = updateEditTotal;
+    document.getElementById('editAppel').oninput = updateEditTotal;
+
+    document.getElementById('saveOrderBtn').onclick = saveOrderChanges;
+    document.getElementById('cancelEditBtn').onclick = closeEditModal;
+    document.getElementById('deleteOrderBtn').onclick = confirmDeleteOrder;
+}
+
+function updateEditTotal() {
+    const krenten = parseInt(document.getElementById('editKrenten').value) || 0;
+    const naturel = parseInt(document.getElementById('editNaturel').value) || 0;
+    const appel = parseInt(document.getElementById('editAppel').value) || 0;
+
+    const total = (krenten * 1.10) + (naturel * 1.00) + (appel * 1.25);
+    document.getElementById('editTotal').textContent = formatPrice(total);
+}
+
+function closeEditModal() {
+    document.getElementById('editOrderModal').style.display = 'none';
+    editingOrderNumber = null;
+}
+
+async function saveOrderChanges() {
+    if (!editingOrderNumber) return;
+
+    const timeslotSelect = document.getElementById('editTimeslot');
+    const selectedTimeslot = timeslots.find(ts => ts.id === timeslotSelect.value);
+
+    const products = {
+        oliebol_krenten: parseInt(document.getElementById('editKrenten').value) || 0,
+        oliebol_naturel: parseInt(document.getElementById('editNaturel').value) || 0,
+        appelbeignet: parseInt(document.getElementById('editAppel').value) || 0
+    };
+
+    try {
+        const response = await fetch(`${API_BASE}/orders/${editingOrderNumber}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
+            body: JSON.stringify({
+                products,
+                timeslot_id: timeslotSelect.value,
+                timeslot_label: selectedTimeslot ? `${selectedTimeslot.start || selectedTimeslot.start_time} - ${selectedTimeslot.end || selectedTimeslot.end_time}` : ''
+            })
+        });
+
+        if (response.ok) {
+            // Update local order
+            const order = orders.find(o => o.orderNumber === editingOrderNumber);
+            if (order) {
+                order.products = products;
+                order.timeslot = timeslotSelect.value;
+                order.timeslotLabel = selectedTimeslot ? `${selectedTimeslot.start || selectedTimeslot.start_time} - ${selectedTimeslot.end || selectedTimeslot.end_time}` : '';
+                order.total = (products.oliebol_krenten * 1.10) + (products.oliebol_naturel * 1.00) + (products.appelbeignet * 1.25);
+                updateLocalOrder(order);
+            }
+
+            closeEditModal();
+            renderOrders();
+            updateOrderCounts();
+            renderTimeslotOverview();
+        } else {
+            const error = await response.json();
+            alert('Fout bij opslaan: ' + (error.error || 'Onbekende fout'));
+        }
+    } catch (e) {
+        alert('Fout bij opslaan: ' + e.message);
+    }
+}
+
+async function confirmDeleteOrder() {
+    if (!editingOrderNumber) return;
+
+    if (!confirm('Weet je zeker dat je deze order wilt verwijderen?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/orders/${editingOrderNumber}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+
+        if (response.ok) {
+            // Remove from local orders
+            orders = orders.filter(o => o.orderNumber !== editingOrderNumber);
+
+            closeEditModal();
+            renderOrders();
+            updateOrderCounts();
+            renderTimeslotOverview();
+        } else {
+            const error = await response.json();
+            alert('Fout bij verwijderen: ' + (error.error || 'Onbekende fout'));
+        }
+    } catch (e) {
+        alert('Fout bij verwijderen: ' + e.message);
+    }
+}
+
+// =====================
 // Capacity Management
 // =====================
 async function loadTimeslots() {
@@ -1027,7 +1189,8 @@ async function loadTimeslots() {
             headers: getAuthHeaders()
         });
         if (response.ok) {
-            timeslots = await response.json();
+            const data = await response.json();
+            timeslots = data.timeslots || data || [];
         } else if (response.status === 401) {
             handleLogout();
             return;

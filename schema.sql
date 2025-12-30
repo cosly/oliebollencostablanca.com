@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS orders (
     total REAL NOT NULL,
     status TEXT DEFAULT 'pending',  -- pending, completed, noshow
     completed_at TEXT,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    deleted_at TEXT DEFAULT NULL  -- soft delete timestamp
 );
 
 -- Timeslots table (half-uur slots)
