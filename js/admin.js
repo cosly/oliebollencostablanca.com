@@ -758,7 +758,7 @@ function renderOrders() {
     }
 
     container.innerHTML = filteredOrders.map(order => {
-        const phone = (order.customer?.telefoon || '').replace(/[^0-9+]/g, '');
+        const phone = formatPhoneForWhatsApp(order.customer?.telefoon || '');
         const orderUrl = `https://oliebollencostablanca.com/order?order=${order.orderNumber}`;
         const whatsappMsg = encodeURIComponent(`Hierbij voor de zekerheid je Oliebollen Order:\n${orderUrl}`);
         const whatsappUrl = phone ? `https://wa.me/${phone}?text=${whatsappMsg}` : '';
@@ -1761,6 +1761,31 @@ function checkTimeAgainstSlot(startTime, endTime) {
 // =====================
 // Utility Functions
 // =====================
+function formatPhoneForWhatsApp(phone) {
+    if (!phone) return '';
+
+    // Remove all non-digits
+    let cleaned = phone.replace(/\D/g, '');
+
+    // Handle different formats
+    if (cleaned.startsWith('00')) {
+        // International with 00 prefix: 0031612345678 -> 31612345678
+        cleaned = cleaned.substring(2);
+    } else if (cleaned.startsWith('06') && cleaned.length === 10) {
+        // Dutch mobile: 0612345678 -> 31612345678
+        cleaned = '31' + cleaned.substring(1);
+    } else if (cleaned.startsWith('0') && cleaned.length === 10) {
+        // Other Dutch: 0201234567 -> 31201234567
+        cleaned = '31' + cleaned.substring(1);
+    } else if (cleaned.startsWith('6') && cleaned.length === 9) {
+        // Spanish mobile without country code: 612345678 -> 34612345678
+        cleaned = '34' + cleaned;
+    }
+
+    // Return only if we have a valid-looking number (at least 10 digits)
+    return cleaned.length >= 10 ? cleaned : '';
+}
+
 function formatPrice(amount) {
     return '€\u00A0' + amount.toFixed(2).replace('.', ',');
 }
