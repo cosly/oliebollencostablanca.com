@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scanner - Oliebollen Costa Blanca</title>
+    <link rel="stylesheet" href="css/style.css?v=3.2">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        /* Scanner-only overrides */
+        .scanner-page {
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+        .scanner-header {
+            background: #2c3e50;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .scanner-header h1 {
+            font-size: 1.2rem;
+            margin: 0;
+            font-family: 'Fredoka', sans-serif;
+        }
+        .scanner-main {
+            padding: 16px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .scanner-container {
+            margin-bottom: 20px;
+        }
+        #qr-reader {
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .scanner-ready-msg {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body class="admin-body scanner-page">
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>Oliebollen Costa Blanca</h1>
+                <p>Scanner Login</p>
+            </div>
+
+            <!-- Step 1: Request code -->
+            <div id="requestCodeForm" class="login-form">
+                <p class="login-info">Klik om een login code te ontvangen per email.</p>
+                <button type="button" id="requestCodeBtn" class="btn btn-primary btn-login">Stuur login code</button>
+                <p id="requestError" class="login-error" style="display: none;"></p>
+            </div>
+
+            <!-- Step 2: Token input (hidden initially) -->
+            <form id="tokenForm" class="login-form" style="display: none;">
+                <p class="token-info">We hebben een 6-cijferige code naar je email gestuurd.</p>
+                <div class="form-group">
+                    <label for="loginToken">Verificatie code</label>
+                    <input type="text" id="loginToken" name="token" required
+                           placeholder="123456" maxlength="6" pattern="[0-9]{6}"
+                           inputmode="numeric" autocomplete="one-time-code">
+                </div>
+                <button type="submit" class="btn btn-primary btn-login">Inloggen</button>
+                <button type="button" id="backToRequest" class="btn btn-secondary btn-back">Nieuwe code aanvragen</button>
+                <p id="tokenError" class="login-error" style="display: none;"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scanner Content (hidden until logged in) -->
+    <div id="adminContent" class="scanner-page" style="display: none;">
+        <header class="scanner-header">
+            <h1>Scanner</h1>
+            <button id="logoutBtn" class="btn-logout" title="Uitloggen">Uitloggen</button>
+        </header>
+
+        <main class="scanner-main">
+            <div class="scanner-container">
+                <div id="qr-reader"></div>
+                <div class="scanner-overlay">
+                    <button id="startScanBtn" class="btn btn-primary">Start Scanner</button>
+                </div>
+            </div>
+
+            <!-- Scanned Order Display -->
+            <div id="scannedOrder" class="order-display" style="display: none;">
+                <div class="order-card">
+                    <div class="order-card-header">
+                        <span class="order-number" id="scanOrderNumber">-</span>
+                        <span class="order-status pending" id="scanOrderStatus">Wachtend</span>
+                    </div>
+                    <div class="order-card-body">
+                        <div class="order-customer" id="scanCustomer">-</div>
+                        <div class="order-timeslot" id="scanTimeslot">-</div>
+                        <div class="timeslot-status" id="scanTimeslotStatus" style="display: none;">
+                            <span class="timeslot-status-icon"></span>
+                            <span class="timeslot-status-text"></span>
+                        </div>
+                        <div class="order-items" id="scanItems">-</div>
+                        <div class="order-total" id="scanTotal">€ 0,00</div>
+
+                        <!-- Wisselgeld Calculator -->
+                        <div class="calculator">
+                            <h3>Wisselgeld Calculator</h3>
+                            <div class="calc-row">
+                                <span class="calc-label">Te betalen:</span>
+                                <span class="calc-value total" id="calcTotal">€ 0,00</span>
+                            </div>
+                            <div class="calc-row">
+                                <span class="calc-label">Ontvangen:</span>
+                                <input type="number" class="calc-input" id="calcReceived"
+                                       placeholder="0,00" step="0.01" min="0" inputmode="decimal">
+                            </div>
+                            <div class="calc-row">
+                                <span class="calc-label">Wisselgeld:</span>
+                                <span class="calc-value change" id="calcChange">€ 0,00</span>
+                            </div>
+                            <div class="quick-amounts">
+                                <button class="quick-amount-btn" data-amount="5">€5</button>
+                                <button class="quick-amount-btn" data-amount="10">€10</button>
+                                <button class="quick-amount-btn" data-amount="20">€20</button>
+                                <button class="quick-amount-btn" data-amount="50">€50</button>
+                            </div>
+                        </div>
+
+                        <div class="order-actions">
+                            <button class="btn btn-success" id="completeOrderBtn">Afgehandeld</button>
+                            <button class="btn btn-secondary" id="cancelScanBtn">Annuleren</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Order Lookup -->
+            <div class="manual-lookup">
+                <h3>Of zoek handmatig:</h3>
+                <div class="lookup-form">
+                    <div class="autocomplete-container">
+                        <input type="text" id="manualOrderNumber" placeholder="Bestelnummer of naam..." class="form-input" autocomplete="off">
+                        <div id="autocompleteResults" class="autocomplete-results"></div>
+                    </div>
+                    <button id="lookupBtn" class="btn btn-primary">Zoeken</button>
+                </div>
+            </div>
+
+            <p class="scanner-ready-msg" id="scannerReadyMsg">Start de scanner of zoek handmatig op bestelnummer.</p>
+        </main>
+    </div>
+
+    <script src="js/scanner.js"></script>
+</body>
+</html>
