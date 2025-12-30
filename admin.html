@@ -138,6 +138,10 @@
 
         <!-- Orders Tab -->
         <section id="tab-orders" class="admin-tab">
+            <div class="orders-header">
+                <input type="text" id="orderSearchInput" class="search-input" placeholder="Zoek op naam, email, telefoon...">
+                <button id="addOrderBtn" class="btn btn-primary">+ Bestelling toevoegen</button>
+            </div>
             <div class="orders-filter">
                 <select id="timeslotFilter" class="filter-select">
                     <option value="">Alle tijdsloten</option>
@@ -167,7 +171,10 @@
 
             <!-- Timeslot Overview -->
             <div class="timeslot-overview-section">
-                <h3>Overzicht per tijdslot</h3>
+                <h3 class="collapsible-header" id="toggleTimeslotOverview">
+                    Overzicht per tijdslot
+                    <span class="toggle-icon">▼</span>
+                </h3>
                 <div id="timeslotOverview" class="timeslot-overview-grid">
                     <p class="loading">Overzicht laden...</p>
                 </div>
@@ -707,6 +714,63 @@
 
             <div class="delete-section">
                 <button class="btn btn-danger btn-delete-order" id="deleteOrderBtn">Order verwijderen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Order Modal -->
+    <div id="addOrderModal" class="modal" style="display: none;">
+        <div class="modal-content edit-order-modal">
+            <h3>Bestelling toevoegen</h3>
+
+            <div class="edit-form">
+                <div class="edit-section">
+                    <label>Naam *</label>
+                    <input type="text" id="addOrderName" class="edit-input" placeholder="Naam klant" required>
+                </div>
+
+                <div class="edit-section">
+                    <label>Email</label>
+                    <input type="email" id="addOrderEmail" class="edit-input" placeholder="email@voorbeeld.nl">
+                </div>
+
+                <div class="edit-section">
+                    <label>Telefoon</label>
+                    <input type="tel" id="addOrderPhone" class="edit-input" placeholder="+34 6XX XXX XXX">
+                </div>
+
+                <div class="edit-section">
+                    <label>Tijdslot *</label>
+                    <select id="addOrderTimeslot" class="edit-input"></select>
+                </div>
+
+                <div class="edit-section">
+                    <label>Producten</label>
+                    <div class="edit-products">
+                        <div class="edit-product-row">
+                            <span class="product-label">Oliebollen rozijnen (€1,10)</span>
+                            <input type="number" id="addKrenten" min="0" max="100" value="0" class="edit-input">
+                        </div>
+                        <div class="edit-product-row">
+                            <span class="product-label">Oliebollen naturel (€1,00)</span>
+                            <input type="number" id="addNaturel" min="0" max="100" value="0" class="edit-input">
+                        </div>
+                        <div class="edit-product-row">
+                            <span class="product-label">Appelbeignets (€1,25)</span>
+                            <input type="number" id="addAppel" min="0" max="100" value="0" class="edit-input">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="edit-total">
+                    <span>Totaal:</span>
+                    <span id="addOrderTotal">€ 0,00</span>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="confirmAddOrderBtn">Toevoegen</button>
+                <button class="btn btn-secondary" id="cancelAddOrderBtn">Annuleren</button>
             </div>
         </div>
     </div>

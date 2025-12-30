@@ -222,6 +222,30 @@ function initAdminPanel() {
     loadOrders();
     loadTimeslots();
     checkConnection();
+
+    // Add order button
+    document.getElementById('addOrderBtn')?.addEventListener('click', showAddOrderModal);
+
+    // Search input
+    document.getElementById('orderSearchInput')?.addEventListener('input', renderOrders);
+
+    // Timeslot overview toggle
+    const toggleBtn = document.getElementById('toggleTimeslotOverview');
+    const overviewGrid = document.getElementById('timeslotOverview');
+    if (toggleBtn && overviewGrid) {
+        // Restore saved state
+        const isCollapsed = localStorage.getItem('timeslotOverviewCollapsed') === 'true';
+        if (isCollapsed) {
+            toggleBtn.classList.add('collapsed');
+            overviewGrid.classList.add('hidden');
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            toggleBtn.classList.toggle('collapsed');
+            overviewGrid.classList.toggle('hidden');
+            localStorage.setItem('timeslotOverviewCollapsed', overviewGrid.classList.contains('hidden'));
+        });
+    }
 }
 
 // =====================
@@ -703,6 +727,7 @@ function renderOrders() {
     const container = document.getElementById('ordersList');
     const statusFilter = document.getElementById('statusFilter').value;
     const timeslotFilter = document.getElementById('timeslotFilter').value;
+    const searchQuery = (document.getElementById('orderSearchInput')?.value || '').toLowerCase().trim();
 
     let filteredOrders = orders;
 
@@ -714,16 +739,36 @@ function renderOrders() {
         filteredOrders = filteredOrders.filter(o => o.timeslot === timeslotFilter);
     }
 
+    if (searchQuery) {
+        filteredOrders = filteredOrders.filter(o => {
+            const naam = (o.customer?.naam || '').toLowerCase();
+            const email = (o.customer?.email || '').toLowerCase();
+            const telefoon = (o.customer?.telefoon || '').toLowerCase();
+            const orderNumber = (o.orderNumber || '').toLowerCase();
+            return naam.includes(searchQuery) ||
+                   email.includes(searchQuery) ||
+                   telefoon.includes(searchQuery) ||
+                   orderNumber.includes(searchQuery);
+        });
+    }
+
     if (filteredOrders.length === 0) {
         container.innerHTML = '<p class="no-orders">Geen bestellingen gevonden</p>';
         return;
     }
 
-    container.innerHTML = filteredOrders.map(order => `
+    container.innerHTML = filteredOrders.map(order => {
+        const phone = (order.customer?.telefoon || '').replace(/[^0-9+]/g, '');
+        const orderUrl = `https://oliebollencostablanca.com/order.html?order=${order.orderNumber}`;
+        const whatsappMsg = encodeURIComponent(`Hierbij voor de zekerheid je Oliebollen Order:\n${orderUrl}`);
+        const whatsappUrl = phone ? `https://wa.me/${phone}?text=${whatsappMsg}` : '';
+
+        return `
         <div class="order-card" data-order="${escapeHtml(order.orderNumber)}">
             <div class="order-card-header">
                 <span class="order-number">${escapeHtml(order.orderNumber)}</span>
                 <button class="btn-copy-url" data-order="${escapeHtml(order.orderNumber)}" title="Kopieer link">📋</button>
+                ${phone ? `<a href="${whatsappUrl}" target="_blank" class="btn-whatsapp" title="Stuur WhatsApp">💬</a>` : ''}
                 <span class="order-status ${order.status || 'pending'}">${getStatusLabel(order.status)}</span>
                 <button class="btn-edit-order" data-order="${escapeHtml(order.orderNumber)}" title="Bewerken">✏️</button>
             </div>
@@ -741,8 +786,8 @@ function renderOrders() {
                     `}
                 </div>
             </div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 
     // Add event listeners
     container.querySelectorAll('.btn-complete').forEach(btn => {
@@ -1177,6 +1222,118 @@ async function confirmDeleteOrder() {
         }
     } catch (e) {
         alert('Fout bij verwijderen: ' + e.message);
+    }
+}
+
+// =====================
+// Add Order Modal
+// =====================
+function showAddOrderModal() {
+    // Clear form
+    document.getElementById('addOrderName').value = '';
+    document.getElementById('addOrderEmail').value = '';
+    document.getElementById('addOrderPhone').value = '';
+    document.getElementById('addKrenten').value = 0;
+    document.getElementById('addNaturel').value = 0;
+    document.getElementById('addAppel').value = 0;
+    document.getElementById('addOrderTotal').textContent = '€ 0,00';
+
+    // Populate timeslot dropdown
+    const timeslotSelect = document.getElementById('addOrderTimeslot');
+    timeslotSelect.innerHTML = timeslots.map(ts => `
+        <option value="${ts.id}">
+            ${ts.start || ts.start_time} - ${ts.end || ts.end_time}
+        </option>
+    `).join('');
+
+    // Show modal
+    document.getElementById('addOrderModal').style.display = 'flex';
+
+    // Event listeners
+    document.getElementById('addKrenten').oninput = updateAddOrderTotal;
+    document.getElementById('addNaturel').oninput = updateAddOrderTotal;
+    document.getElementById('addAppel').oninput = updateAddOrderTotal;
+
+    document.getElementById('confirmAddOrderBtn').onclick = submitNewOrder;
+    document.getElementById('cancelAddOrderBtn').onclick = closeAddOrderModal;
+}
+
+function updateAddOrderTotal() {
+    const krenten = parseInt(document.getElementById('addKrenten').value) || 0;
+    const naturel = parseInt(document.getElementById('addNaturel').value) || 0;
+    const appel = parseInt(document.getElementById('addAppel').value) || 0;
+
+    const total = (krenten * 1.10) + (naturel * 1.00) + (appel * 1.25);
+    document.getElementById('addOrderTotal').textContent = formatPrice(total);
+}
+
+function closeAddOrderModal() {
+    document.getElementById('addOrderModal').style.display = 'none';
+}
+
+async function submitNewOrder() {
+    const name = document.getElementById('addOrderName').value.trim();
+    const email = document.getElementById('addOrderEmail').value.trim();
+    const phone = document.getElementById('addOrderPhone').value.trim();
+    const timeslotSelect = document.getElementById('addOrderTimeslot');
+    const selectedTimeslot = timeslots.find(ts => ts.id === timeslotSelect.value);
+
+    if (!name) {
+        alert('Vul een naam in');
+        return;
+    }
+
+    if (!timeslotSelect.value) {
+        alert('Selecteer een tijdslot');
+        return;
+    }
+
+    const products = {
+        oliebol_krenten: parseInt(document.getElementById('addKrenten').value) || 0,
+        oliebol_naturel: parseInt(document.getElementById('addNaturel').value) || 0,
+        appelbeignet: parseInt(document.getElementById('addAppel').value) || 0
+    };
+
+    const totalItems = products.oliebol_krenten + products.oliebol_naturel + products.appelbeignet;
+    if (totalItems === 0) {
+        alert('Voeg minimaal 1 product toe');
+        return;
+    }
+
+    const timeslotLabel = selectedTimeslot
+        ? `${selectedTimeslot.start || selectedTimeslot.start_time} - ${selectedTimeslot.end || selectedTimeslot.end_time}`
+        : '';
+
+    try {
+        const response = await fetch(`${API_BASE}/orders/admin`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
+            body: JSON.stringify({
+                customer: {
+                    naam: name,
+                    email: email || '',
+                    telefoon: phone || ''
+                },
+                products,
+                timeslot: timeslotSelect.value,
+                timeslotLabel
+            })
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            alert(`Bestelling ${result.orderNumber} toegevoegd!`);
+            closeAddOrderModal();
+            loadOrders();
+        } else {
+            const error = await response.json();
+            alert('Fout bij toevoegen: ' + (error.error || 'Onbekende fout'));
+        }
+    } catch (e) {
+        alert('Fout bij toevoegen: ' + e.message);
     }
 }
 

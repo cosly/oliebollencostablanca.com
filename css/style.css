@@ -1731,6 +1731,26 @@ footer p {
     border: 2px solid var(--warning);
 }
 
+/* Orders header */
+.orders-header {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.search-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 2px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
 /* Orders filter */
 .orders-filter {
     display: flex;
@@ -1784,6 +1804,31 @@ footer p {
     font-size: 1.1rem;
     margin-bottom: 12px;
     color: var(--dark);
+}
+
+.collapsible-header {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+.collapsible-header:hover {
+    color: var(--primary);
+}
+
+.toggle-icon {
+    font-size: 0.8rem;
+    transition: transform 0.2s ease;
+}
+
+.collapsible-header.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.timeslot-overview-grid.hidden {
+    display: none;
 }
 
 .timeslot-overview-grid {
@@ -2135,6 +2180,21 @@ footer p {
 
 .btn-copy-url {
     margin-left: 4px;
+}
+
+.btn-whatsapp {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s;
+    text-decoration: none;
+}
+
+.btn-whatsapp:hover {
+    background: #25D366;
 }
 
 /* Edit Order Modal */
