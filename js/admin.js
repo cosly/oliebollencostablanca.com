@@ -759,8 +759,9 @@ function renderOrders() {
 
     container.innerHTML = filteredOrders.map(order => {
         const phone = formatPhoneForWhatsApp(order.customer?.telefoon || '');
+        const firstName = (order.customer?.naam || '').split(' ')[0];
         const orderUrl = `https://oliebollencostablanca.com/order?order=${order.orderNumber}`;
-        const whatsappMsg = encodeURIComponent(`Hierbij voor de zekerheid je Oliebollen Order:\n${orderUrl}`);
+        const whatsappMsg = encodeURIComponent(`Hallo ${firstName}, we gaan zo aan je oliebollen order beginnen.\n${orderUrl}\nTot straks!`);
         const whatsappUrl = phone ? `https://wa.me/${phone}?text=${whatsappMsg}` : '';
 
         return `
