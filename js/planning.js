@@ -135,6 +135,7 @@ function updateUI() {
 
     updateTotals();
     updateCapacity();
+    updateVoorbak();
     updatePlanningTable();
     updateTaskList();
 }
@@ -148,6 +149,7 @@ function updateTotals() {
     };
 
     setEl('summaryTotaal', t.totaal);
+    setEl('summaryOliebollen', t.naturel + t.rozijnen);
     setEl('summaryPlain', t.naturel);
     setEl('summaryRaisin', t.rozijnen);
     setEl('summaryApple', t.appel);
@@ -163,6 +165,55 @@ function updateCapacity() {
             (${c.activeUnits} pannen, ${c.cycleTime} min/cyclus)
         `;
     }
+}
+
+function updateVoorbak() {
+    const voorbakEl = document.getElementById('voorbakInfo');
+    if (!voorbakEl || !currentPlanning.planning.length) return;
+
+    // Get start time and first slot time
+    const startTime = currentParams.start_time || '07:00';
+    const firstSlot = currentPlanning.planning[0].slot;
+
+    // Convert to minutes
+    const startMinutes = timeToMinutes(startTime);
+    const firstSlotMinutes = timeToMinutes(firstSlot);
+
+    // Calculate voorbak time (time available before first slot)
+    const voorbakMinuten = firstSlotMinutes - startMinutes;
+
+    if (voorbakMinuten <= 0) {
+        voorbakEl.style.display = 'none';
+        return;
+    }
+
+    // Calculate how much can be pre-baked
+    const c = currentPlanning.capacity;
+    const batchesVoorbak = Math.floor(voorbakMinuten / c.cycleTime);
+    const stuksVoorbak = batchesVoorbak * c.perBatch;
+
+    // First slot requirements
+    const firstSlotTotaal = currentPlanning.planning[0].orders.totaal;
+
+    // Show info
+    document.getElementById('voorbakTijd').textContent = `${voorbakMinuten} min (${startTime} - ${firstSlot})`;
+    document.getElementById('voorbakCapaciteit').textContent = `${stuksVoorbak} stuks (${batchesVoorbak} batches)`;
+
+    // Advice
+    const adviesEl = document.getElementById('voorbakAdvies');
+    if (stuksVoorbak >= firstSlotTotaal) {
+        adviesEl.innerHTML = `<span style="color: green;">✓ Voldoende voor eerste slot (${firstSlotTotaal} nodig)</span>`;
+    } else {
+        const tekort = firstSlotTotaal - stuksVoorbak;
+        adviesEl.innerHTML = `<span style="color: orange;">⚠ Tekort van ${tekort} stuks voor eerste slot</span>`;
+    }
+
+    voorbakEl.style.display = 'block';
+}
+
+function timeToMinutes(timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
 }
 
 function updatePlanningTable() {

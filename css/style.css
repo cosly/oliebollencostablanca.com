@@ -4325,6 +4325,16 @@ footer p {
     font-size: 0.9rem;
 }
 
+.voorbak-info {
+    background: #fef9e7;
+    border: 1px solid #f39c12;
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    color: #7d6608;
+    font-size: 0.9rem;
+    margin-top: 8px;
+}
+
 /* Labels Tab */
 .labels-container {
     padding: 16px;
