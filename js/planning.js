@@ -314,6 +314,16 @@ function printRunsheet() {
 
     const printWindow = window.open('', '_blank');
     const t = currentPlanning.totals;
+    const c = currentPlanning.capacity;
+
+    // Calculate voorbak info
+    const startTime = currentParams.start_time || '07:00';
+    const firstSlot = currentPlanning.planning[0]?.slot || '09:00';
+    const startMinutes = timeToMinutes(startTime);
+    const firstSlotMinutes = timeToMinutes(firstSlot);
+    const voorbakMinuten = Math.max(0, firstSlotMinutes - startMinutes);
+    const batchesVoorbak = Math.floor(voorbakMinuten / c.cycleTime);
+    const stuksVoorbak = batchesVoorbak * c.perBatch;
 
     let tasksHtml = '';
     let currentHour = -1;
@@ -328,8 +338,9 @@ function printRunsheet() {
 
         const icons = { naturel: '🟠', rozijnen: '🟣', appel: '🟢', bakken: '🔵' };
         const icon = icons[task.category] || '⚪';
+        const earlyStyle = task.early ? 'color: #e74c3c;' : '';
         tasksHtml += `
-            <div style="display: flex; gap: 10px; margin: 8px 0; font-size: 14px;">
+            <div style="display: flex; gap: 10px; margin: 8px 0; font-size: 14px; ${earlyStyle}">
                 <span style="font-size: 18px;">☐</span>
                 <span style="font-weight: bold; min-width: 50px;">${task.time}</span>
                 <span>${icon} ${task.description}</span>
@@ -345,9 +356,11 @@ function printRunsheet() {
             <style>
                 body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
                 h1 { border-bottom: 2px solid #333; padding-bottom: 10px; }
-                .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
+                .summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 20px 0; }
                 .summary-item { background: #f5f5f5; padding: 15px; text-align: center; border-radius: 8px; }
                 .summary-value { font-size: 24px; font-weight: bold; color: #e67e22; }
+                .info-box { background: #e8f4fd; border: 1px solid #3498db; border-radius: 8px; padding: 12px; margin: 15px 0; }
+                .voorbak-box { background: #fef9e7; border: 1px solid #f39c12; border-radius: 8px; padding: 12px; margin: 15px 0; }
                 @media print { body { padding: 0; } }
             </style>
         </head>
@@ -357,7 +370,11 @@ function printRunsheet() {
             <div class="summary">
                 <div class="summary-item">
                     <div class="summary-value">${t.totaal}</div>
-                    <div>Totaal stuks</div>
+                    <div>Totaal</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">${t.naturel + t.rozijnen}</div>
+                    <div>Oliebollen</div>
                 </div>
                 <div class="summary-item">
                     <div class="summary-value">${t.naturel}</div>
@@ -373,11 +390,24 @@ function printRunsheet() {
                 </div>
             </div>
 
+            <div class="info-box">
+                <strong>Capaciteit:</strong> ${c.perBatch} stuks/batch, ${c.perHour} stuks/uur
+                (${c.activeUnits} pannen, ${c.cycleTime} min/cyclus)
+            </div>
+
+            ${voorbakMinuten > 0 ? `
+            <div class="voorbak-box">
+                <strong>Voorbakken:</strong> ${voorbakMinuten} min beschikbaar (${startTime} - ${firstSlot})
+                → ${stuksVoorbak} stuks buffer (${batchesVoorbak} batches)
+            </div>
+            ` : ''}
+
             <h2>Takenlijst</h2>
+            <p style="font-size: 12px; color: #666;">🟠 Naturel &nbsp; 🟣 Rozijnen &nbsp; 🟢 Appel &nbsp; 🔵 Bakken</p>
             ${tasksHtml}
 
             <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #333; font-size: 12px; color: #666;">
-                Gegenereerd: ${new Date().toLocaleString('nl-NL')}
+                Start productie: ${startTime} | Gegenereerd: ${new Date().toLocaleString('nl-NL')}
             </div>
         </body>
         </html>
